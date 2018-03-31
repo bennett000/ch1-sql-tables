@@ -1,0 +1,58 @@
+{
+  "name": "sql-tables",
+  "version": "0.99.0",
+  "description": "Object mapper for SQL and TypeScript/JavaScript",
+  "main": "index.js",
+  "private": false,
+  "scripts": {
+    "build": "yarn run test",
+    "clean": "yarn run clean:coverage && rimraf ./dist",
+    "clean:coverage": "rimraf ./coverage",
+    "cover": "istanbul report --include ./dist/coverage.json",
+    "lint": "tslint ./src/**/*.ts",
+    "premocha": "yarn run tsc",
+    "mocha": "cross-env MJB_TEST=true mocha -R spec --recursive \"dist/**/*.spec.js\"",
+    "mocha:w": "cross-env MJB_TEST=true mocha -w -R spec --recursive \"dist/**/*.spec.js\"",
+    "remap-istanbul": "remap-istanbul -i ./coverage/coverage.json -o ./dist/coverage.json",
+    "start": "node ./index.js",
+    "pretest": "yarn run clean && yarn run premocha && yarn run lint",
+    "test": "cross-env MJB_TEST=true istanbul cover _mocha -- -R spec --recursive \"dist/**/*.spec.js\"",
+    "pretest:w": "yarn run tsc",
+    "test:w": "concurrently \"yarn run tsc:w\" \"yarn run mocha:w\"",
+    "posttest": "yarn run remap-istanbul && yarn run clean:coverage && yarn run cover",
+    "tsc": "tsc",
+    "tsc:w": "tsc -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git.michaeljbennett.info/srv/repo/michaeljbennett.info.git"
+  },
+  "keywords": [
+    "jekyll",
+    "static",
+    "website",
+    "michaeljbennett"
+  ],
+  "author": "Michael J. Bennett",
+  "license": "LGPL-3.0",
+  "dependencies": {
+    "pg": "^6.1.2",
+    "rxjs": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/mocha": "^2.2.37",
+    "@types/node": "^7.0.0",
+    "@types/pg": "^6.1.35",
+    "chai": "^3.5.0",
+    "concurrently": "^3.1.0",
+    "cross-env": "^3.1.4",
+    "istanbul": "^0.4.5",
+    "mocha": "^3.2.0",
+    "remap-istanbul": "^0.8.4",
+    "rimraf": "^2.5.4",
+    "tslint": "^4.3.1",
+    "typescript": "^2.1.5"
+  },
+  "typings": "dist/index.d.ts"
+}

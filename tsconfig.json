@@ -1,0 +1,23 @@
+{
+  "buildOnSave": false,
+  "compileOnSave": false,
+  "compilerOptions": {
+    "declaration": true,
+    "lib": [ "dom", "es6" ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es6",
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "outDir": "dist",
+    "removeComments": false,
+    "sourceMap": true
+  },
+  "exclude": [
+    "coverage",
+    "dist",
+    "node_modules",
+    "./index.d.ts"
+  ]
+}
