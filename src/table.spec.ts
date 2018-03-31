@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import {
   Client,
 } from 'pg';
@@ -19,13 +18,13 @@ import {
 describe('table specs', () => {
   describe('createInsertQuery function', () => {
     it('should handle single values', () => {
-      expect(createInsertQuery('users', ['name'], ['jane'])).to
-        .equal('INSERT INTO users (name) VALUES ($1)');
+      expect(createInsertQuery('users', ['name'], ['jane']))
+      .toBe('INSERT INTO users (name) VALUES ($1)');
     });
 
     it('should handle multiple values', () => {
-      expect(createInsertQuery('users', ['name', 'rank'], ['jane', 'major'])).to
-        .equal('INSERT INTO users (name, rank) VALUES ($1, $2)');
+      expect(createInsertQuery('users', ['name', 'rank'], ['jane', 'major']))
+      .toBe('INSERT INTO users (name, rank) VALUES ($1, $2)');
     });
   });
 
@@ -33,7 +32,7 @@ describe('table specs', () => {
     it('should call the query with params if given params', (done) => {
       const params = ['hello', 'world'];
       const qf = (q: string, p: any[]) => {
-        expect(p).to.deep.equal(params);
+        expect(p).toEqual(params);
         done();
       };
       expect(createPgQuery(<Client>{ query: qf }, 'hello', params));
@@ -41,7 +40,7 @@ describe('table specs', () => {
 
     it('should call the query without params if not given params', (done) => {
       const qf = (q: string, p: any[]) => {
-        expect(p).to.equal(undefined);
+        expect(p).toEqual(undefined);
         done();
       };
       expect(createPgQuery(<Client>{ query: qf }, 'hello'));
@@ -73,9 +72,9 @@ describe('table specs', () => {
       (done) => {
         createQueryStream(client, 'hello', [])
           .subscribe(
-            () => expect('this case').to.equal(undefined),
+            () => expect('this case').toEqual(undefined),
             (err: Error) => {
-              expect(err instanceof Error).to.equal(true);
+              expect(err instanceof Error).toEqual(true);
               done();
             },
             done,
@@ -88,9 +87,9 @@ describe('table specs', () => {
         const expectedRow = { test: 'thing' };
         createQueryStream(client, 'hello', [])
           .subscribe(
-            (row: any) => expect(row).to.deep.equal(expectedRow),
+            (row: any) => expect(row).toEqual(expectedRow),
             (err: Error) => {
-              expect(err).to.equal(undefined);
+              expect(err).toEqual(undefined);
               done();
             },
             done,
@@ -116,9 +115,9 @@ describe('table specs', () => {
       (done) => {
         createQueryObservable(client, 'hello', [])
           .subscribe(
-            () => expect('this case should not happen').to.equal(undefined),
+            () => expect('this case should not happen').toEqual(undefined),
             (err: Error) => {
-              expect(err instanceof Error).to.equal(true);
+              expect(err instanceof Error).toEqual(true);
               done();
             },
             done,
@@ -131,9 +130,9 @@ describe('table specs', () => {
         const expectedThing = { test: 'hello' };
         createQueryObservable(client, 'hello', [])
           .subscribe(
-            (thing: any) => expect(thing).to.deep.equal(expectedThing),
+            (thing: any) => expect(thing).toEqual(expectedThing),
             (err: Error) => {
-              expect(err).to.equal(undefined);
+              expect(err).toEqual(undefined);
               done();
             },
             done,
@@ -146,7 +145,7 @@ describe('table specs', () => {
     it('should throw if there are any errors', () => {
       expect(() =>
         createReduceCompoundInsertOrSelectResults(['col1', 'col2'])([[], []])
-      ).to.throw(Error);
+      ).toThrowError();
     });
 
     it('should return a list of ids if everything is good', () => {
@@ -154,7 +153,7 @@ describe('table specs', () => {
         createReduceCompoundInsertOrSelectResults(['col1', 'col2'])(
           [[{id: 1}], [{id: 2}]]
         )
-      ).to.deep.equal([1, 2]);
+      ).toEqual([1, 2]);
     });
   });
 
@@ -175,10 +174,10 @@ describe('table specs', () => {
     it('should error if the callback gets an error', (done) => {
       getClientFrom(pool)
         .subscribe(() => {
-            expect('this case should not happen').to.equal(undefined);
+            expect('this case should not happen').toEqual(undefined);
           },
           (err) => {
-            expect(err instanceof Error).to.equal(true);
+            expect(err instanceof Error).toEqual(true);
             done();
           }, done);
       poolCallback(new Error('test passed!'));
@@ -188,10 +187,10 @@ describe('table specs', () => {
       const expectedThing = { type: 'client technically' };
       getClientFrom(pool)
         .subscribe((thing: any) => {
-            expect(thing).to.deep.equal(expectedThing);
+            expect(thing).toEqual(expectedThing);
           },
           (err) => {
-            expect('this case should not happen').to.equal(undefined);
+            expect('this case should not happen').toEqual(undefined);
             done();
           }, done);
       poolCallback(null, expectedThing);
@@ -200,47 +199,47 @@ describe('table specs', () => {
 
   describe('hasQueryError', () => {
     it('should return state if state is >= 0', () => {
-      expect(hasQueryError(0, [], 7)).to.equal(0);
+      expect(hasQueryError(0, [], 7)).toEqual(0);
     });
 
     it('should return index if state is -1 and element has no length', () => {
-      expect(hasQueryError(-1, [], 7)).to.equal(7);
+      expect(hasQueryError(-1, [], 7)).toEqual(7);
     });
 
     it('should return -1 if state is -1 and element has length', () => {
-      expect(hasQueryError(-1, [{}], 7)).to.equal(-1);
+      expect(hasQueryError(-1, [{}], 7)).toEqual(-1);
     });
   });
 
   describe('isValidResult function', () => {
     it('should return false if the result object is falsey', () => {
-      expect(isValidResult(undefined)).to.equal(false);
+      expect(isValidResult(undefined)).toEqual(false);
     });
 
     it('should return false if there is no rows object', () => {
-      expect(isValidResult(<any>{})).to.equal(false);
+      expect(isValidResult(<any>{})).toEqual(false);
     });
 
     it('should return false if the rows object is not an array', () => {
-      expect(isValidResult(<any>{ rows: {} })).to.equal(false);
+      expect(isValidResult(<any>{ rows: {} })).toEqual(false);
     });
 
     it('should return false if the rows object is an empty array', () => {
-      expect(isValidResult(<any>{ rows: [] })).to.equal(false);
+      expect(isValidResult(<any>{ rows: [] })).toEqual(false);
     });
 
     it('should return true if the rows object is an array with length', () => {
-      expect(isValidResult(<any>{ rows: [{}] })).to.equal(true);
+      expect(isValidResult(<any>{ rows: [{}] })).toEqual(true);
     });
   });
 
   describe('reduceByKeys function', () => {
     it('if a set of keys contains index return state with that column', () => {
-      expect(reduceByKeys([5])([], 'hello', 5)).to.deep.equal(['hello']);
+      expect(reduceByKeys([5])([], 'hello', 5)).toEqual(['hello']);
     });
 
     it('if a set of keys does not contain an index return state', () => {
-      expect(reduceByKeys([5])([], 'hello', 3)).to.deep.equal([]);
+      expect(reduceByKeys([5])([], 'hello', 3)).toEqual([]);
     });
   });
 
@@ -254,7 +253,7 @@ describe('table specs', () => {
         name: { type: 'String' },
       }, ['name'], ['jane']);
 
-      expect(result).to.deep.equal(expected);
+      expect(result).toEqual(expected);
     });
 
     it('should handle two existing cases', () => {
@@ -267,7 +266,7 @@ describe('table specs', () => {
         rank: { type: 'String' },
       }, ['name', 'rank'], ['jane', 'major']);
 
-      expect(result).to.deep.equal(expected);
+      expect(result).toEqual(expected);
     });
 
     it('should skip non existing cases', () => {
@@ -279,7 +278,7 @@ describe('table specs', () => {
         name: { type: 'String' },
       }, ['name', 'rank'], ['jane', 'major']);
 
-      expect(result).to.deep.equal(expected);
+      expect(result).toEqual(expected);
     });
   });
 });

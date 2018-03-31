@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import { Dictionary } from '../../util';
@@ -24,7 +23,7 @@ describe('checker functions', () => {
       const tno = listTableNames(() => Observable
         .create()
       );
-      expect(typeof (tno.subscribe)).to.equal('function');
+      expect(typeof (tno.subscribe)).toBe('function');
     });
 
     it('should filter for truthy table_name\'s', (done) => {
@@ -38,7 +37,7 @@ describe('checker functions', () => {
       ).toArray();
 
       testArr.subscribe((a: string[]) => {
-        expect(a).to.deep.equal(['test']);
+        expect(a).toEqual(['test']);
         done();
       });
     });
@@ -46,33 +45,33 @@ describe('checker functions', () => {
 
   describe('createCheckForTableInCode function', () => {
     it('should return a function', () => {
-      expect(typeof createCheckForTableInCode({})).to.equal('function');
+      expect(typeof createCheckForTableInCode({})).toBe('function');
     });
 
     it('should return a function that returns an error if a case insensitive ' +
       'prop is not in an object', () => {
       const fn = createCheckForTableInCode({ });
-      expect(typeof fn('some-prop').error).to.equal('object');
+      expect(typeof fn('some-prop').error).toBe('object');
     });
 
     it('should return a function tha returns a prop name if the case ' +
       'insensitive prop name exists in an object', () => {
       const fn = createCheckForTableInCode((<any>{ 'some-prop': {} }));
-      expect(fn('some-prop').error).to.equal(undefined);
+      expect(fn('some-prop').error).toBe(undefined);
     });
   });
 
   describe('fetchTablesAndCheckIfInCode function', () => {
     it('should return an observable', () => {
       const o = fetchTablesAndCheckIfInCode(() => Observable.create(), {});
-      expect(typeof o.subscribe).to.equal('function');
+      expect(typeof o.subscribe).toBe('function');
     });
   });
 
   describe('findColumnsInSchema function', () => {
     it('should return false if a given table is not in a given schema', () => {
       expect(findColumnInSchema({}, 'some-table', 'some-column'))
-        .to.equal(false);
+        .toBe(false);
     });
 
     it('should return false if a given column is not in a given struct', () => {
@@ -81,7 +80,7 @@ describe('checker functions', () => {
           struct: {},
         },
       }, 'some-table', 'some-column'))
-        .to.equal(false);
+        .toBe(false);
     });
 
     it('should return a struct prop if a given a valid column', () => {
@@ -94,7 +93,7 @@ describe('checker functions', () => {
           },
         },
       }, 'some-table', 'some-column')))
-        .to.equal(true);
+        .toBe(true);
     });
   });
 
@@ -108,7 +107,7 @@ describe('checker functions', () => {
         is_nullable: 'YES',
         numeric_precision: 0,
         table_name: 'some-table',
-      })).error).not.to.equal(undefined);
+      })).error).not.toBe(undefined);
     });
 
     it('should return a function that returns a container with no validation ' +
@@ -129,14 +128,14 @@ describe('checker functions', () => {
         is_nullable: 'YES',
         numeric_precision: 0,
         table_name: 'some-table',
-      }).error).to.equal(undefined);
+      }).error).toBe(undefined);
     });
   });
 
   describe('flattenSchemaValidationContainers function', () => {
     it('should handle an empty case', () => {
       expect(flattenSchemaValidationContainers([
-      ])).to.deep.equal({
+      ])).toEqual({
         errors: [],
         names: [],
       });
@@ -156,7 +155,7 @@ describe('checker functions', () => {
           },
           name: 'thing2',
         },
-      ])).to.deep.equal({
+      ])).toEqual({
         errors: [{
           name: 'thing2',
           type: 'column',
@@ -178,8 +177,8 @@ describe('checker functions', () => {
           struct: {},
         },
       }, ['sometable']);
-      expect(list.length).to.equal(1);
-      expect(list[0].reason).to.equal(NotInDb);
+      expect(list.length).toBe(1);
+      expect(list[0].reason).toBe(NotInDb);
     });
   });
 
@@ -196,7 +195,7 @@ describe('checker functions', () => {
         },
       }, ['some-table.some-column']);
 
-      expect(results.length).to.equal(0);
+      expect(results.length).toBe(0);
     });
   });
 
@@ -205,15 +204,15 @@ describe('checker functions', () => {
       const result = createColumnsInDbTableReducer(
         [ 'some-table.some-other-column' ], 'some-table'
       )([], null, 'some-column');
-      expect(result.length).to.equal(1);
-      expect(result[0].reason).to.equal('not in db');
+      expect(result.length).toBe(1);
+      expect(result[0].reason).toBe('not in db');
     });
 
     it('should *not* add an error to a list if it\'s found', () => {
       const result = createColumnsInDbTableReducer(
         [ 'some-table.some-column' ], 'some-table'
       )([], null, 'some-column');
-      expect(result.length).to.equal(0);
+      expect(result.length).toBe(0);
     });
   });
 

@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { Observable } from 'rxjs/Observable';
 import { Observer } from 'rxjs/Observer';
 import {
@@ -33,10 +32,10 @@ describe('Maintainer Fixer functions', () => {
         dateCreated: 'String',
       };
       mutateStructIntoSchemaStructs(template, dict);
-      expect((<any>dict.tableA).id).to.equal('UInt64');
-      expect((<any>dict.tableA).dateCreated).to.equal('String');
-      expect((<any>dict.tableB).id).to.equal('UInt64');
-      expect((<any>dict.tableB).dateCreated).to.equal('String');
+      expect((<any>dict.tableA).id).toBe('UInt64');
+      expect((<any>dict.tableA).dateCreated).toBe('String');
+      expect((<any>dict.tableB).id).toBe('UInt64');
+      expect((<any>dict.tableB).dateCreated).toBe('String');
     });
 
     it('shoud preserve existing keys', () => {
@@ -49,8 +48,8 @@ describe('Maintainer Fixer functions', () => {
         dateCreated: 'String',
       };
       mutateStructIntoSchemaStructs(template, dict);
-      expect((<any>dict).tableA.id).to.equal('String');
-      expect((<any>dict).tableB.id).to.equal('UInt64');
+      expect((<any>dict).tableA.id).toBe('String');
+      expect((<any>dict).tableB.id).toBe('UInt64');
     });
   });
 
@@ -62,7 +61,7 @@ describe('Maintainer Fixer functions', () => {
         },
       };
       expect(strictifySchemaItem(struct))
-        .to.deep.equal({ struct });
+        .toEqual({ struct });
     });
 
     it('should return a schemaPropStrict if given a SchemaStruct', () => {
@@ -75,7 +74,7 @@ describe('Maintainer Fixer functions', () => {
         },
       };
       expect(strictifySchemaItem(struct))
-        .to.deep.equal({ struct: structStrict });
+        .toEqual({ struct: structStrict });
     });
 
     it('should return a schemaPropStrict if given a SchemaPropStrict', () => {
@@ -87,7 +86,7 @@ describe('Maintainer Fixer functions', () => {
         },
       };
       expect(strictifySchemaItem(scProp))
-        .to.deep.equal({ struct: scProp.struct });
+        .toEqual({ struct: scProp.struct });
     });
 
     it('should return a schemaPropStrict if given a SchemaProp', () => {
@@ -100,7 +99,7 @@ describe('Maintainer Fixer functions', () => {
         },
       };
       expect(strictifySchemaItem(scProp))
-        .to.deep.equal({ struct: structStrict });
+        .toEqual({ struct: structStrict });
     });
   });
 
@@ -114,7 +113,7 @@ describe('Maintainer Fixer functions', () => {
 
       expect(createStructIterator(
         {}, <any>noop, 'key')(state, { type: 'String' })
-      ).to.deep.equal(state);
+      ).toEqual(state);
     });
 
     it('if there is a dependent ancestor throw', () => {
@@ -129,7 +128,7 @@ describe('Maintainer Fixer functions', () => {
           relation: { prop: 'any', struct: 'thing' },
           type: 'String',
         })
-      ).to.throw(Error);
+      ).toThrowError();
     });
 
     it('if the item has been checked return state', () => {
@@ -144,7 +143,7 @@ describe('Maintainer Fixer functions', () => {
           relation: { prop: 'any', struct: 'thing' },
           type: 'String',
         })
-      ).to.deep.equal(state);
+      ).toEqual(state);
     });
 
     it('if the relation in question is not in the schema, throw', () => {
@@ -159,7 +158,7 @@ describe('Maintainer Fixer functions', () => {
           relation: { prop: 'any', struct: 'thing' },
           type: 'String',
         })
-      ).to.throw(Error);
+      ).toThrowError();
     });
 
     it('if the item is not an ancestor and is not checked and exists in the ' +
@@ -173,7 +172,7 @@ describe('Maintainer Fixer functions', () => {
       createStructIterator(
         (<SchemaStrict>{ thing: { struct: {}} }),
         (s: CircularDepStore, scProp) => {
-          expect(scProp).to.deep.equal({ struct: {}});
+          expect(scProp).toEqual({ struct: {}});
           done();
           return s;
         }, 'key')(state, {
@@ -196,7 +195,7 @@ describe('Maintainer Fixer functions', () => {
           relation: { prop: 'any', struct: 'thing' },
           type: 'String',
         })
-      ).to.deep.equal(state);
+      ).toEqual(state);
     });
   });
 
@@ -211,7 +210,7 @@ describe('Maintainer Fixer functions', () => {
       expect(createCrIterator({})(state, {
         struct: {},
       }, 'thing'))
-        .to.deep.equal(state);
+        .toEqual(state);
     });
 
     it('should mark state and add items to the result if they pass', () => {
@@ -235,13 +234,13 @@ describe('Maintainer Fixer functions', () => {
       })(startState, {
         struct: {},
       }, 'thing'))
-        .to.deep.equal(expectedState);
+        .toEqual(expectedState);
     });
   });
 
   describe('isConstraint function', () => {
     it('return false if there are no constraints', () => {
-      expect(isConstraint('NotNull', { type: 'String' })).to.equal(false);
+      expect(isConstraint('NotNull', { type: 'String' })).toBe(false);
     });
     
     it('return true if the constraint exists', () => {
@@ -249,20 +248,20 @@ describe('Maintainer Fixer functions', () => {
         type: 'String',
         constraints: ['Automatic', 'NotNull'],
       }))
-        .to.equal(true);
+        .toBe(true);
     });
   });
 
   describe('createReferences function', () => {
     it('should return an empty string on no relation', () => {
-      expect(createReferences({ type: 'UInt64' })).to.equal('');
+      expect(createReferences({ type: 'UInt64' })).toBe('');
     });
 
     it('should return a reference string if there are references', () => {
       expect(createReferences({
         type: 'UInt64',
         relation: { prop: 'some-prop', struct: 'some-struct' },
-      })).to.not.equal('');
+      })).not.toBe('');
     });
   });
 
@@ -270,7 +269,7 @@ describe('Maintainer Fixer functions', () => {
     it('should create an empty table', (done) => {
       createTableFromStruct(
         (query: string) => {
-          expect(query).to.equal('CREATE TABLE thing ();');
+          expect(query).toBe('CREATE TABLE thing ();');
           return Observable.create((o: Observer<any>) => {
             o.next(undefined);
             o.complete();
@@ -284,7 +283,7 @@ describe('Maintainer Fixer functions', () => {
     it('should create a simple table', (done) => {
       createTableFromStruct(
         (query: string) => {
-          expect(query).to.equal(
+          expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255), columnB varchar(255));'
           );
           return Observable.create((o: Observer<any>) => {
@@ -304,7 +303,7 @@ describe('Maintainer Fixer functions', () => {
     it('should create a table with a primary key and foreign keys', (done) => {
       createTableFromStruct(
         (query: string) => {
-          expect(query).to.equal(
+          expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255) NOT NULL, ' +
             'columnB varchar(255) PRIMARY KEY, ' +
             'columnC integer  REFERENCES b (a), ' +
@@ -329,7 +328,7 @@ describe('Maintainer Fixer functions', () => {
     it('should create a table with composite keys', (done) => {
       createTableFromStruct(
         (query: string) => {
-          expect(query).to.equal(
+          expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255), ' +
             'columnB varchar(255), ' +
             'columnC integer, ' +
@@ -360,7 +359,7 @@ describe('Maintainer Fixer functions', () => {
     it('should create a table with composite foreign keys', (done) => {
       createTableFromStruct(
         (query: string) => {
-          expect(query).to.equal(
+          expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255), ' +
             'columnB varchar(255), ' +
             'columnC integer, ' +

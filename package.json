@@ -9,12 +9,15 @@
   "typings": "dist/cjs/index.d.ts",
   "private": false,
   "scripts": {
+    "prebuild": "yarn run test",
     "build": "yarn run tsc && yarn run build:web",
     "prebuild:web": "yarn run tsc:es6",
-    "build:web": "rollup -c && google-closure-compiler-js dist/umd/sql-tables.js > dist/umd/sql-tables.min.js",
+    "build:web": "rollup -c",
+    "postbuild:web": "google-closure-compiler-js dist/umd/sql-tables.js > dist/umd/sql-tables.min.js",
     "clean": "yarn run clean:coverage && rimraf ./dist",
     "clean:coverage": "rimraf ./coverage",
     "lint": "tslint ./src/**/*.ts",
+    "prepublish": "yarn run build",
     "start": "node ./index.js",
     "pretest": "yarn run clean && yarn run lint",
     "test": "jest",
@@ -40,9 +43,7 @@
     "rxjs": "^5.0.3"
   },
   "devDependencies": {
-    "@types/chai": "^3.4.34",
     "@types/jest": "^22.2.2",
-    "@types/mocha": "^2.2.37",
     "@types/node": "^7.0.0",
     "@types/pg": "^6.1.35",
     "chai": "^3.5.0",

@@ -2,6 +2,7 @@ import { dbName } from '../../db-connect';
 import { toString } from '../../util';
 import { QueryStream } from '../../table';
 import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/toArray';
 
 export interface InfoSchemaTable {
   table_name: string
@@ -62,7 +63,7 @@ export const createTable:
     const q =
       `CREATE TABLE ${tableName} (${columnsAndConstraints.join(', ').trim()});`;
     return query(q)
-      .toArray()
+      .toArray();
 };
 
 

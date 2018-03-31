@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { NotInCode, Schema, TypeMismatch } from '../schema';
 import {
   createColumnName,
@@ -19,7 +18,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'varchar',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, [])).to.equal(null);
+      }, [])).toBe(null);
     });
 
     it('should return null if db and code match (inverse)', () => {
@@ -30,7 +29,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'varchar',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, ['NotNull'])).to.equal(null);
+      }, ['NotNull'])).toBe(null);
     });
 
     it('should return a SchemaValidation if db is nullable and code is not',
@@ -42,7 +41,7 @@ describe('Schema Maintainer type checking functions', () => {
           data_type: 'varchar',
           character_maximum_length: 25,
           numeric_precision: 0,
-        }, ['NotNull'])).to.not.equal(null);
+        }, ['NotNull'])).not.toBe(null);
       });
 
     it('should return a SchemaValidation if db is not nullable and code is',
@@ -54,7 +53,7 @@ describe('Schema Maintainer type checking functions', () => {
           data_type: 'varchar',
           character_maximum_length: 25,
           numeric_precision: 0,
-        }, [])).to.not.equal(null);
+        }, [])).not.toBe(null);
       });
   });
 
@@ -72,7 +71,7 @@ describe('Schema Maintainer type checking functions', () => {
         },
       };
 
-      expect(validateSchemaRelations(passing)).to.equal('');
+      expect(validateSchemaRelations(passing)).toBe('');
     });
 
     it('should fail a simple type mismatch case', () => {
@@ -88,7 +87,7 @@ describe('Schema Maintainer type checking functions', () => {
         },
       };
 
-      expect(validateSchemaRelations(passing)).not.to.equal('');
+      expect(validateSchemaRelations(passing)).not.toBe('');
     });
 
     it('should fail a simple missing relationship case', () => {
@@ -101,13 +100,13 @@ describe('Schema Maintainer type checking functions', () => {
         },
       };
 
-      expect(validateSchemaRelations(passing)).not.to.equal('');
+      expect(validateSchemaRelations(passing)).not.toBe('');
     });
   });
 
   describe('createColumnName function', () => {
     it('should return a "dot joined" string', () => {
-      expect(createColumnName('foo', 'bar')).to.equal('foo.bar');
+      expect(createColumnName('foo', 'bar')).toBe('foo.bar');
     });
   });
 
@@ -120,7 +119,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'varchar',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, ['NotNull'])).to.not.equal(null);
+      }, ['NotNull'])).not.toBe(null);
     });
 
     it('should return a TypeMismatch if types mismatch', () => {
@@ -131,7 +130,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'integer',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, ['NotNull']).reason).to.equal(TypeMismatch);
+      }, ['NotNull']).reason).toBe(TypeMismatch);
     });
 
     it('should return a NotInCode if it does not have a type mapping', () => {
@@ -142,7 +141,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'barf',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, ['NotNull']).reason).to.equal(NotInCode);
+      }, ['NotNull']).reason).toBe(NotInCode);
     });
   });
 
@@ -158,7 +157,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'barf',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }).error).to.not.equal(undefined);
+      }).error).not.toBe(undefined);
     });
 
     it('should return a container with no validation error if there is no ' +
@@ -172,7 +171,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'varchar',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }).error).to.not.equal(undefined);
+      }).error).not.toBe(undefined);
     });
   });
 
@@ -186,7 +185,7 @@ describe('Schema Maintainer type checking functions', () => {
             },
           },
         },
-      }, { prop: 'some-column', struct: 'some-table' }, 'String')).to.equal('');
+      }, { prop: 'some-column', struct: 'some-table' }, 'String')).toBe('');
     });
 
     it('should return an error string if column is not found', () => {
@@ -195,14 +194,14 @@ describe('Schema Maintainer type checking functions', () => {
           struct: { },
         },
       }, { prop: 'some-column', struct: 'some-table' }, 'String'))
-        .to.not.equal('');
+        .not.toBe('');
     });
 
     it('should return an error string if table is not found', () => {
       expect(findRelation(
         {},
         { prop: 'some-column', struct: 'some-table' }, 'String')
-      ).to.not.equal('');
+      ).not.toBe('');
     });
   });
 });

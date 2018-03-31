@@ -1,0 +1,7 @@
+./.git
+rollup.config.js
+tsconfig*
+tslint*
+yarn*
+node_modules
+coverage/
