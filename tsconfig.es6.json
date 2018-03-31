@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.base",
+  "compilerOptions": {
+    "declaration": true,
+    "module": "esnext",
+    "target": "es6",
+    "outDir": "dist/es6",
+    "sourceMap": true
+  }
+}

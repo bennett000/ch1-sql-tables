@@ -93,7 +93,7 @@ export function fetchColumnsAndCheckIfInCode(
   return listAllColumns(query)
     .filter(filterByTable)
     .map(createInfoSchemaToValidationContainer(schema))
-    .toArray();
+    .toArray() as any;
 }
 
 export function createCheckForTableInCode(dict: SchemaStrict) {
