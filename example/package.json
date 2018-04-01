@@ -1,0 +1,29 @@
+{
+  "name": "sql-tables-example-application",
+  "version": "0.1.0",
+  "description": "Example application that demonstrates how to use sql-tables",
+  "main": "./dist/index.js",
+  "author": "Michael J. Bennett",
+  "license": "LGPL-3.0",
+  "bin": "./index.js",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
+    "express": "^4.16.3",
+    "express-rate-limit": "^2.11.0",
+    "helmet": "^3.12.0",
+    "rxjs": "^5.5.8",
+    "sql-tables": "^0.100.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.11.1",
+    "rimraf": "^2.6.2",
+    "typescript": "^2.8.1"
+  },
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "prebuild": "yarn clean",
+    "build": "tsc",
+    "postinstall": "yarn build"
+  }
+}

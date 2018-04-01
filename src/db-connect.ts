@@ -4,14 +4,15 @@ import { error } from './util';
  * @typedef {{ toJs: function(...), toSql: function(...) }} ColumnValidator
  */
 
-export const dbName = process.env.MM_PG_DB || 'match_maker';
+export const dbName = process.env.SQLT_PG_DB || 'default_database';
 
+/** @todo propagate this through from 0 */
 const config = {
-  user: process.env.MM_PG_USER || 'match_maker',
+  user: process.env.SQLT_PG_USER || 'default_database_user',
   database: dbName,
-  password: process.env.MM_PG_PASS || 'this-is-dev',
-  host: process.env.MM_PG_HOST || 'localhost',
-  port: process.env.MM_PG_PORT || 5432,
+  password: process.env.SQLT_PG_PASS || 'this-is-dev',
+  host: process.env.SQLT_PG_HOST || 'localhost',
+  port: process.env.SQLT_PG_PORT || 5432,
   max: 20,
   idleTimeoutMillis: 30000,
 };

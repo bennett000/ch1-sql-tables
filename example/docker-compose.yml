@@ -1,0 +1,23 @@
+version: '2'
+services:
+  sql-tables-example-api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    ports:
+     - "8282:8282"
+    environment:
+     - SQLT_API_PORT=8282
+     - SQLT_PG_USER=sql-tables-example
+     - SQLT_PG_DB=sql-tables-example
+     - SQLT_PG_PASS=this-is-dev
+     - SQLT_PG_HOST=postgres
+     - SQLT_PG_PORT=5432
+    depends_on:
+     - "postgres"
+    volumes:
+     - .:/opt/sql-tables-example:ro
+  postgres:
+    build: ./docker/postgres/
+    ports:
+     - "5432:5432"

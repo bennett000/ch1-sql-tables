@@ -1,7 +1,7 @@
 {
   "name": "sql-tables",
-  "version": "0.100.0",
-  "description": "Object mapper for SQL and TypeScript/JavaScript",
+  "version": "0.100.1",
+  "description": "Thin data access layer and schema generator for Postgres (and potentially other SQLs) that leverages RxJS streams and can generate TypeScript type defintions",
   "main": "index.js",
   "module": "dist/es6/index.js",
   "jsnext:main": "dist/es6/index.js",
@@ -30,16 +30,18 @@
   "keywords": [
     "sql",
     "database",
+    "postgres",
+    "schema",
     "dal",
-    "javascript",
-    "node",
+    "rxjs",
     "reactive",
     "stream",
-    "michaeljbennett"
+    "typescript"
   ],
   "author": "Michael J. Bennett",
   "license": "LGPL-3.0",
   "dependencies": {
+    "chalk": "^2.3.2",
     "pg": "^6.1.2",
     "rxjs": "^5.0.3"
   },
@@ -52,7 +54,7 @@
     "rimraf": "^2.5.4",
     "ts-jest": "^22.4.2",
     "tslint": "^4.3.1",
-    "typescript": "^2.1.5"
+    "typescript": "^2.8.1"
   },
   "jest": {
     "collectCoverage": true,
