@@ -18,6 +18,9 @@ services:
     volumes:
      - .:/opt/sql-tables-example:ro
   postgres:
-    build: ./docker/postgres/
-    ports:
-     - "5432:5432"
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: this-is-dev
+      POSTGRES_USER: sql-tables-example
+      POSTGRES_DB: sql-tables-example

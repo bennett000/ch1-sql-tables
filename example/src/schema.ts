@@ -20,7 +20,21 @@ const jsonSchema: Schema = {
       type: 'String',
       typeMax: 255,
     },
-    age: 'UInt8',
+    age: 'UInt16',
+  },
+  Posts: {
+    id: {
+      constraints: ['PrimaryKey', 'Automatic'],
+      type: 'UInt64',
+    },
+    userId: {
+      relation: { struct: 'Users', prop: 'id' },
+      type: 'UInt64',
+    },
+    post: {
+      type: 'String',
+      typeMax: 255,
+    },
   },
 };
 

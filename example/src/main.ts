@@ -2,23 +2,30 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/do';
 import {
   queryStream,
-  Observable,
   SchemaValidation,
   validateAndFixDatabase,
 } from 'sql-tables';
 import { initServer } from './server';
 import { schema } from './schema';
+import { api } from './api';
 
-initialize().subscribe(() => {}, (err: Error) => {
-  console.log('Fatal error initializing database: ', err);
-  process.exit(1);
-});
+const init = validateAndFixDatabase(queryStream, schema)
+  .map((sv: SchemaValidation[]) => sv.length ?
+    console.log('Schema validation issues:', sv) :
+    console.log('Schema validation okay.', sv)
+  )
+  .do(() => initServer(api));
 
-export function initialize(): Observable<void> {
-  return validateAndFixDatabase(queryStream, schema)
-    .map((sv: SchemaValidation[]) => sv.length ?
-        console.log('Schema validation issues:', sv) :
-        console.log('Schema validation okay.', sv)
-    )
-    .do(initServer);
+initialize();
+
+function initialize() {
+  init.subscribe(() => { }, (err: Error) => {
+    if (err.message.indexOf('the database system is starting up') >= 0) {
+      console.log('Database is still booting, retrying in three seconds');
+      setTimeout(initialize, 3000);
+      return;
+    }
+    console.log('Fatal error initializing database: ', err);
+    process.exit(1);
+  });
 }

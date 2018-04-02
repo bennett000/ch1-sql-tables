@@ -1,12 +1,14 @@
 import * as express from 'express';
 import { Request, Response } from 'express';
+import { Handler } from './api';
 
 const cors = require('cors');
 const helmet = require('helmet');
 const bodyParser = require('body-parser');
 const RateLimit = require('express-rate-limit');
 
-export function initServer() {
+
+export function initServer(api: Handler[]) {
   const app = express();
   const port = process.env.SQLT_API_PORT || 8282;
 
@@ -39,6 +41,10 @@ export function initServer() {
   app.get('/favicon.ico', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/status', (req: Request, res: Response) => {
     res.send('Alive');
+  });
+
+  api.forEach((h: Handler) => {
+    app[h.method](h.route, h.handler);
   });
 
   app.get('*', (req: Request, res: Response) => {
