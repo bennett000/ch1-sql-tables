@@ -1,4 +1,3 @@
-import 'rxjs/add/operator/reduce';
 import { Client, Pool, Query, QueryResult } from 'pg';
 import { Observable, Observer } from 'rxjs';
 import {
@@ -511,19 +510,4 @@ export function transactionRollBack(err?: Error): Observable<QueryResult> {
     err.message + '\nStack Trace: ' + err.stack :
     undefined);
   return query('ROLLBACK;');
-}
-
-export function begin() {
-  return queryStream<any>('BEGIN TRANSACTION')
-    .reduce((state) => state, undefined);
-}
-
-export function commit() {
-  return queryStream<any>('COMMIT')
-    .reduce((state) => state, undefined);
-}
-
-export function rollback() {
-  return queryStream<any>('ROLLBACK')
-    .reduce((state) => state, undefined);
 }
