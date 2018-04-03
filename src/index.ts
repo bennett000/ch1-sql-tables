@@ -1,12 +1,15 @@
 export {
+  begin as transactionBegin,
+  commit as transactionCommit,
+  transactionEnd,
   compoundInsertOrSelectIfExists,
   queryStream,
   insertOrSelectIfExistsObservable,
   insert,
   update,
-  deleteFrom,
+  deleteFrom as deleteStream,
   selectWhereStream,
-  selectStream,
+  selectStream as selectFrom,
   TableRow,
 } from './table';
 
