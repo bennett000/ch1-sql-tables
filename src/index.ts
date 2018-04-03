@@ -2,6 +2,7 @@ export {
   begin as transactionBegin,
   commit as transactionCommit,
   transactionEnd,
+  rollback as transactionRollback,
   compoundInsertOrSelectIfExists,
   queryStream,
   insertOrSelectIfExistsObservable,
