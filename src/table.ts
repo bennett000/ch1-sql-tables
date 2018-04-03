@@ -525,7 +525,9 @@ export type SqlCrud<T> = {
       idProps: string[], idVals: Array<number | string>
     ): Observable<QueryResult>;
     select(): Observable<T[P]>;
-    selectWhere(): Observable<T[P]>;
+    selectWhere(
+      idProps: string[], idVals: Array<number | string>
+    ): Observable<T[P]>;
   };
 };
 
