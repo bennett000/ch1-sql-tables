@@ -3,6 +3,10 @@ export {
   queryStream,
   insertOrSelectIfExistsObservable,
   insert,
+  update,
+  deleteFrom,
+  selectWhereStream,
+  selectStream,
   TableRow,
 } from './table';
 

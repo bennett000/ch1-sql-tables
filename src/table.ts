@@ -19,6 +19,7 @@ import {
   sql,
   warn,
   toIntBetweenOptional,
+  identity,
 } from './util';
 
 export const getClient: () => Observable<Client> =
@@ -201,6 +202,31 @@ export function createInsertQuery(
   return `INSERT INTO ${name} (${colString}) VALUES ${valString}`;
 }
 
+export function createUpdateQuery(
+  name: string, cols: string[], vals: any[], idProps: string[]
+): string {
+  const inputs = cols.map((col, i) => `${col} = $${i}`).join(', ');
+  return `UPDATE ${name} SET ${inputs} WHERE ` + idProps.map((prop, i) => {
+    return `${prop} = $${cols.length + i}`;
+  }).join(' AND ');
+}
+
+export function createDeleteQuery(
+  name: string, idProps: string[]
+): string {
+  return `DELETE FROM ${name} WHERE ` + idProps.map((prop, i) => {
+    return `${prop} = $${i}`;
+  }).join(' AND ');
+}
+
+export function createSelectAllQuery(name: string, cols: string[] = []) {
+  if (cols.length) {
+    return `SELECT ${cols.map(identity).join(', ')} FROM ${name}`;
+  } else {
+    return `SELECT * FROM ${name}`;
+  }
+}
+
 export function selectWhereValidator(
   schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
 ): Error | SchemaStructStrict {
@@ -233,6 +259,14 @@ export function selectWhereStream<T>(
   return queryStream(q, validColVals.vals);
 }
 
+export function selectStream<T>(
+  schema: SchemaStrict, tableName: string, cols: string[] = []
+): Observable<T> {
+  const q = createSelectAllQuery(tableName, cols);
+
+  return queryStream(q);
+}
+
 /**
  * returns an observable with the _entire_ result
  */
@@ -252,22 +286,51 @@ export function selectWhereObservable(
   return query(q, validColVals.vals);
 }
 
-export function insert(
-  schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
-): Observable<QueryResult> {
-  if (cols.length !== vals.length) {
-    if (vals.length === 0 || (cols.length % vals.length !== 0)) {
-      return Observable
-        .throw(new Error('insert: columns and values length must be the ' +
-          'same or vals must be a multiple of cols'));
+function colsAndValsFromColsOrObject<T>(
+  colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
+  vals: any[],
+) {
+  let cols: string[];
+
+  if (Array.isArray(colsOrObject)) {
+    cols = colsOrObject;
+    if (cols.length !== vals.length) {
+      if (vals.length === 0 || (cols.length % vals.length !== 0)) {
+        return Observable
+          .throw(new Error('columns and values length must be the same or ' +
+            'vals must be a multiple of cols'));
+      }
     }
+  } else {
+    cols = Object.keys(colsOrObject);
+    vals = cols.map(col => (colsOrObject as any)[col]);
   }
+  
+  return {
+    cols,
+    vals,
+  };
+}
+
+export function insert<T>(
+  schema: SchemaStrict, 
+  tableName: string, 
+  colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
+  vals: any[] = [],
+): Observable<QueryResult> {
+  const cnv = colsAndValsFromColsOrObject(colsOrObject, vals);
+
+  if (cnv instanceof Observable) {
+    return cnv;
+  }
+
   const struct = getStruct(schema, tableName);
+
   if (!struct) {
     return Observable.throw(new Error(`insert: table not found ${tableName}`));
   }
 
-  const validColVals = validatePropValsForInput(struct, cols, vals);
+  const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
 
   const q = createInsertQuery(
     tableName, validColVals.cols, validColVals.vals
@@ -276,6 +339,55 @@ export function insert(
   sql('Attempting query', q);
 
   return query(q, validColVals.vals);
+}
+
+export function update<T>(
+  schema: SchemaStrict, 
+  tableName: string, 
+  idProps: string[],
+  idValues: Array<number | string>,
+  colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
+  vals: any[] = [],
+): Observable<QueryResult> {
+  const cnv = colsAndValsFromColsOrObject(colsOrObject, vals);
+
+  if (cnv instanceof Observable) {
+    return cnv;
+  }
+
+  const struct = getStruct(schema, tableName);
+  if (!struct) {
+    return Observable.throw(new Error(`insert: table not found ${tableName}`));
+  }
+
+  const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
+  validColVals.vals = validColVals.vals.concat(idValues);
+
+  const q = createUpdateQuery(
+    tableName, validColVals.cols, validColVals.vals, idProps,
+  );
+
+  sql('Attempting query', q);
+
+  return query(q, validColVals.vals);
+}
+
+export function deleteFrom(
+  schema: SchemaStrict, 
+  tableName: string, 
+  idProps: string[],
+  idValues: Array<number | string>,
+): Observable<QueryResult> {
+  const struct = getStruct(schema, tableName);
+  if (!struct) {
+    return Observable.throw(new Error(`insert: table not found ${tableName}`));
+  }
+
+  const q = createDeleteQuery(tableName, idProps);
+
+  sql('Attempting query', q);
+
+  return query(q, idValues);
 }
 
 export function reduceByKeys(keys: number[]) {

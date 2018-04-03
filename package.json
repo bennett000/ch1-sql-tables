@@ -1,6 +1,6 @@
 {
   "name": "sql-tables",
-  "version": "0.100.2",
+  "version": "0.101.0",
   "description": "Thin data access layer and schema generator for Postgres (and potentially other SQLs) that leverages RxJS streams and can generate TypeScript type defintions",
   "main": "index.js",
   "module": "dist/es6/index.js",
