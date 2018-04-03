@@ -1,4 +1,5 @@
 export {
+  createCrud,
   transactionStart as transactionBegin,
   transactionEnd as transactionCommit,
   transactionRollBack,

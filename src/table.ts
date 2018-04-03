@@ -511,3 +511,30 @@ export function transactionRollBack(err?: Error): Observable<QueryResult> {
     undefined);
   return query('ROLLBACK;');
 }
+
+export type SqlCrud<T> = {
+  [P in keyof T]?: {
+    insert(thing: T[P]): Observable<QueryResult>;
+    update(
+      idProps: string[], idVals: Array<number | string>, obj: T[P]
+    ): Observable<QueryResult>;
+    delete(
+      idProps: string[], idVals: Array<number | string>
+    ): Observable<QueryResult>;
+    select(): Observable<T[P]>;
+  };
+};
+
+export function createCrud<T>(schema: SchemaStrict): SqlCrud<T> {
+  return Object.keys(schema).reduce((
+    crud: SqlCrud<T>, el: string
+  ) => {
+    (crud as any)[el] = {
+      insert: insert.bind(null, schema, el),
+      update: update.bind(null, schema, el),
+      delete: deleteFrom.bind(null, schema, el),
+      select: selectStream.bind(null, schema, el),
+    };
+    return crud;
+  }, {} as SqlCrud<T>);
+}
