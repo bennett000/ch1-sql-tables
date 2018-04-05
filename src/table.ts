@@ -46,34 +46,23 @@ export interface TableRow {
 export function getClientFrom(p: () => Pool): Observable<Client> {
   return Observable.create((obs: Observer<Client>) => {
     let cleanup: Function = noop;
-    let t: any;
 
     p()
       .connect((err: Error, client: Client, done: Function) => {
         cleanup = done;
         if (err) {
-          clearTimeout(t);
           obs.error(err);
-          if (done) {
-            done();
-          }
           return;
         }
-        clearTimeout(t);
         obs.next(client);
         obs.complete();
       });
 
-    t = setTimeout(() => {
-      console.warn('sql-tables: lease exceeded 5s');
-      if (cleanup) {
-        obs.error(new Error('sql-tables: lease timed out'));
+    return () => {
+      if (cleanup) { 
         cleanup();
-        return;
       }
-    }, 5000);
-
-    return cleanup;
+    };
   });
 }
 
