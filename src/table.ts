@@ -63,6 +63,9 @@ export function getClientFrom(p: () => Pool): Observable<Client> {
 
     t = setTimeout(() => {
       console.warn('sql-tables: lease exceeded 3s');
+      if (cleanup) {
+        cleanup();
+      }
     }, 3000);
 
     return cleanup;
