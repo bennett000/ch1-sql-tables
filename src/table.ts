@@ -361,7 +361,6 @@ export function update<T>(
   }
 
   const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
-  validColVals.vals = validColVals.vals.concat(idValues);
 
   const q = createUpdateQuery(
     tableName, validColVals.cols, validColVals.vals, idProps,
