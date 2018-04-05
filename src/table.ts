@@ -205,7 +205,7 @@ export function createInsertQuery(
 export function createUpdateQuery(
   name: string, cols: string[], vals: any[], idProps: string[]
 ): string {
-  const inputs = cols.map((col, i) => `${col} = $${i}`).join(', ');
+  const inputs = cols.map((col, i) => `${col} = $${i + 1}`).join(', ');
   return `UPDATE ${name} SET ${inputs} WHERE ` + idProps.map((prop, i) => {
     return `${prop} = $${cols.length + i}`;
   }).join(' AND ');
