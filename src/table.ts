@@ -65,13 +65,13 @@ export function getClientFrom(p: () => Pool): Observable<Client> {
       });
 
     t = setTimeout(() => {
-      console.warn('sql-tables: lease exceeded 3s');
+      console.warn('sql-tables: lease exceeded 5s');
       if (cleanup) {
         obs.error(new Error('sql-tables: lease timed out'));
         cleanup();
         return;
       }
-    }, 3000);
+    }, 5000);
 
     return cleanup;
   });
