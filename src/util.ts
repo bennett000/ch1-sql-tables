@@ -228,7 +228,7 @@ export function error(...messages: any[]) {
 }
 
 export function sql(...messages: any[]) {
-  if (process.env.MJB_HIDE_SQL) {
+  if (process.env.SQLT_HIDE_SQL) {
     return;
   }
   console.log.call(console, chalk.blue(messages.join(' ')));
