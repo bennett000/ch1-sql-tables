@@ -5,7 +5,7 @@
   "main": "index.js",
   "module": "dist/es6/index.js",
   "jsnext:main": "dist/es6/index.js",
-  "typings": "dist/cjs/index.d.ts",
+  "types": "dist/cjs/index.d.ts",
   "private": false,
   "scripts": {
     "postinstall": "echo \" \n*** WARNING package sql tables is deprecated ***\n \"",
