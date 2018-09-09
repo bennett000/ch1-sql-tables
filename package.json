@@ -8,6 +8,7 @@
   "typings": "dist/cjs/index.d.ts",
   "private": false,
   "scripts": {
+    "postinstall": "echo \" \n*** WARNING package sql tables is deprecated ***\n \"",
     "prebuild": "yarn run test",
     "build": "yarn run tsc && yarn run tsc:es6",
     "clean": "yarn run clean:coverage && rimraf ./dist",
