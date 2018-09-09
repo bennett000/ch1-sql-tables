@@ -1,14 +1,19 @@
 SQL Tables
 ==========
 
-** DEPRECATED ** replaced by [@ch1/sql-tables](https://www.npmjs.com/package/@ch1/rpc "@ch1/sql-tables library")
+[![CircleCI](https://circleci.com/gh/bennett000/ch1-sql-tables.svg?style=svg)](https://circleci.com/gh/bennett000/ch1-sql-tables)
 
-_This library is not maintained... yet_
 
+_This is not well maintained_
+
+## Installation
+
+`yarn add @ch1/sql-tables`
+
+## Description
 
 SQL Tables is a thin data access layer and schema generator for Postgres (and potentially other SQLs) that leverages RxJS streams and can generate TypeScript type definitions.
 
-
 ## License
 
-[LGPLv3](./LICENSE "Lesser GNU Public License")
+[LGPL](./LICENSE 'Lesser GNU Public License')

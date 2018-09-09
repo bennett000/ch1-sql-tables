@@ -1,6 +1,6 @@
 {
-  "name": "sql-tables",
-  "version": "0.104.0",
+  "name": "@ch1/sql-tables",
+  "version": "1.0.0",
   "description": "Thin data access layer and schema generator for Postgres (and potentially other SQLs) that leverages RxJS streams and can generate TypeScript type defintions",
   "main": "index.js",
   "module": "dist/es6/index.js",
@@ -8,7 +8,6 @@
   "types": "dist/cjs/index.d.ts",
   "private": false,
   "scripts": {
-    "postinstall": "echo \" \n*** WARNING package sql tables is deprecated ***\n \"",
     "prebuild": "yarn run test",
     "build": "yarn run tsc && yarn run tsc:es6",
     "clean": "yarn run clean:coverage && rimraf ./dist",
@@ -24,9 +23,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bennett000/sql-tables.git"
+    "url": "https://github.com/bennett000/ch1-sql-tables.git"
   },
-  "homepage": "https://github.com/bennett000/sql-tables.git",
+  "homepage": "https://github.com/bennett000/ch1-sql-tables.git",
+  "bugs": "https://github.com/bennett000/ch1-sql-tables.git/issues",
   "keywords": [
     "sql",
     "database",
