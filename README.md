@@ -1,6 +1,8 @@
 SQL Tables
 ==========
 
+** DEPRECATED ** replaced by [@ch1/sql-tables](https://www.npmjs.com/package/@ch1/rpc "@ch1/sql-tables library")
+
 _This library is not maintained... yet_
 
 
