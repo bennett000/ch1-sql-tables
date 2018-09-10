@@ -22,10 +22,10 @@ export const api: Handler[] = [
 ];
 
 function getUsers(req: Request, res: Response) {
-  const partial: any[] = [];
+  console.log('getUsers');
   selectUsers().then((result) => { 
-    partial.push(result);
-    res.send(partial);
+    console.log('getUsers next');
+    res.send(result);
   }, (err) => {
     console.log('Error: getUsers:', err);
     res.status(500);
@@ -34,8 +34,9 @@ function getUsers(req: Request, res: Response) {
 }
 
 function postRandomUser(req: Request, res: Response) {
+    console.log('post random');
   insertRandomUser().then(() => {
-    console.log('pr next');
+    console.log('post random next');
     res.sendStatus(200);
   }).catch((err: Error) => {
     console.log('Error: postRandom:', err);

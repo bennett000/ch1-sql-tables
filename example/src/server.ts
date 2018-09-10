@@ -21,8 +21,8 @@ export function initServer(api: Handler[]) {
 
 
   const limiter = new RateLimit({
-    delayAfter: 10,             // after the first ten reqs delay
-    delayMs: 1500,              // throttle by 500ms
+    delayAfter: 20,             // after the first ten reqs delay
+    delayMs: 500,              // throttle by 500ms
     max: 15 * 60,               // limit max requests to 1/second
     keyGenerator: (req: Request) => req.ip, // sub-optimal :(
     windowMs: 15 * 60 * 1000,   // memory duration

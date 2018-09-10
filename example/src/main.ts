@@ -8,7 +8,7 @@ import { schema } from './schema';
 import { api } from './api';
 
 const init = validateAndFixDatabase(query, schema)
-.then((sv: SchemaValidation[]) => sv.length ?
+  .then((sv: SchemaValidation[]) => sv.length ?
     console.log('Schema validation issues:', sv) :
     console.log('Schema validation okay.', sv)
   )
