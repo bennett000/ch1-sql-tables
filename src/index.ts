@@ -3,16 +3,17 @@ export {
   transactionStart as transactionBegin,
   transactionEnd as transactionCommit,
   transactionRollBack,
-  compoundInsertOrSelectIfExists,
-  queryStream,
-  insertOrSelectIfExistsObservable,
+  query,
   insert,
   update,
   deleteFrom as deleteStream,
-  selectWhereStream,
-  selectStream as selectFrom,
-  TableRow,
+  selectWhere,
+  select,
 } from './table';
+
+export {
+  TableRow,
+} from './interfaces';
 
 export {
   mutateStructIntoSchemaStructs,
@@ -27,7 +28,3 @@ export {
 export { deepFreeze, error, log, toGtZeroIntMax, toStringMax } from './util';
 
 export { writeTsFromSchema } from './schema/schema-to-typescript';
-
-export { Observable } from 'rxjs/Observable';
-export { Observer } from 'rxjs/Observer';
-export { Subscription } from 'rxjs/Subscription';

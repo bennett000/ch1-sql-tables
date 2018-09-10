@@ -1,12 +1,10 @@
 import {
-  Client,
+  PoolClient,
 } from 'pg';
-import { Dictionary } from './util';
 import {
   createInsertQuery,
   createPgQuery,
-  createQueryObservable,
-  createQueryStream,
+  createQueryPromise,
   createReduceCompoundInsertOrSelectResults,
   getClientFrom,
   hasQueryError,
@@ -35,7 +33,7 @@ describe('table specs', () => {
         expect(p).toEqual(params);
         done();
       };
-      expect(createPgQuery(<Client>{ query: qf }, 'hello', params));
+      expect(createPgQuery(<PoolClient>{ query: qf }, 'hello', params));
     });
 
     it('should call the query without params if not given params', (done) => {
@@ -43,101 +41,44 @@ describe('table specs', () => {
         expect(p).toEqual(undefined);
         done();
       };
-      expect(createPgQuery(<Client>{ query: qf }, 'hello'));
+      expect(createPgQuery(<PoolClient>{ query: qf }, 'hello'));
     });
   });
 
-  describe('createQueryStream function', () => {
-    let client: Client;
-    let callbacks: Dictionary<Function[]> = {};
-    const emit = (
-      event: string, value: any
-    ) => callbacks[event].forEach(cb => cb(value));
-
-    beforeEach(() => {
-      callbacks = {};
-      client = <Client>(<any>{
-        query: () => ({
-          on: (event: string, handler: Function) => {
-            if (!callbacks[event]) {
-              callbacks[event] = [];
-            }
-            callbacks[event].push(handler);
-          },
-        }),
-      });
-    });
-
-    it('should return a rejecting observable if an error event is raised',
-      (done) => {
-        createQueryStream(client, 'hello', [])
-          .subscribe(
-            () => expect('this case').toEqual(undefined),
-            (err: Error) => {
-              expect(err instanceof Error).toEqual(true);
-              done();
-            },
-            done,
-          );
-        emit('error', new Error('test passing'));
-      });
-
-    it('should return an observable that emits as expected',
-      (done) => {
-        const expectedRow = { test: 'thing' };
-        createQueryStream(client, 'hello', [])
-          .subscribe(
-            (row: any) => expect(row).toEqual(expectedRow),
-            (err: Error) => {
-              expect(err).toEqual(undefined);
-              done();
-            },
-            done,
-          );
-        emit('row', expectedRow);
-        // this call validates the complete state
-        emit('end', true);
-      });
-  });
 
   describe('createQueryObservable function', () => {
-    let client: Client;
+    let client: PoolClient;
     let resolve: Function;
     let reject: Function;
 
     beforeEach(() => {
-      client = <Client>(<any>{
+      client = <PoolClient>(<any>{
         query: () => (new Promise((p, f) => { resolve = p; reject = f; })),
       });
     });
 
-    it('should return a rejecting observable if client\'s query rejects',
+    it('should return a rejecting promise if client\'s query rejects',
       (done) => {
-        createQueryObservable(client, 'hello', [])
-          .subscribe(
-            () => expect('this case should not happen').toEqual(undefined),
-            (err: Error) => {
-              expect(err instanceof Error).toEqual(true);
-              done();
-            },
-            done,
-          );
+        createQueryPromise(client, 'hello', [])
+          .then(() => expect('this case should not happen').toEqual(undefined))
+          .catch((err: Error) => {
+            expect(err instanceof Error).toEqual(true);
+            done();
+          });
         reject(new Error('fail case'));
       });
 
-    it('should trigger an observable if client\'s query resolves',
-      (done) => {
+    it('should trigger a promise if client\'s query resolves',
+      () => {
         const expectedThing = { test: 'hello' };
-        createQueryObservable(client, 'hello', [])
-          .subscribe(
-            (thing: any) => expect(thing).toEqual(expectedThing),
-            (err: Error) => {
-              expect(err).toEqual(undefined);
-              done();
-            },
-            done,
-          );
-        resolve(expectedThing);
+        setTimeout(() => resolve(expectedThing), 0);
+        return createQueryPromise(client, 'hello', [])
+          .then((thing: any) => {
+            expect(thing).toEqual(expectedThing);
+          })
+          .catch((err: Error) => {
+            expect(err).toEqual(undefined);
+          });
       });
   });
 
@@ -159,41 +100,46 @@ describe('table specs', () => {
 
   describe('getClientFrom function', () => {
     let pool: () => any;
-    let poolCallback: Function;
+    let result: any;
 
     beforeEach(() => {
       pool = () => ({
-        connect: (
-          callback: (err: Error|null, client: Client, done: Function) => any
-        ) => {
-          poolCallback = callback;
+        connect: () => {
+          return new Promise((resolve, reject) => {
+            if (result instanceof Error) {
+              reject(result);
+            } else {
+              resolve(result);
+            }
+          });
         },
       });
     });
 
     it('should error if the callback gets an error', (done) => {
+      result = new Error('test passed!');
       getClientFrom(pool)
-        .subscribe(() => {
-            expect('this case should not happen').toEqual(undefined);
-          },
-          (err) => {
-            expect(err instanceof Error).toEqual(true);
-            done();
-          }, done);
-      poolCallback(new Error('test passed!'));
+        .then(() => {
+          expect('this case should not happen').toEqual(undefined);
+        })
+        .catch((err: any) => {
+          expect(err instanceof Error).toEqual(true);
+          done();
+        });
     });
 
     it('should emit a client if everything is good', (done) => {
       const expectedThing = { type: 'client technically' };
+      result = expectedThing;
       getClientFrom(pool)
-        .subscribe((thing: any) => {
-            expect(thing).toEqual(expectedThing);
-          },
-          (err) => {
-            expect('this case should not happen').toEqual(undefined);
-            done();
-          }, done);
-      poolCallback(null, expectedThing);
+        .then((thing: any) => {
+          expect(thing).toEqual(expectedThing);
+          done();
+        })
+        .catch((err) => {
+          expect('this case should not happen').toEqual(undefined);
+          done();
+        });
     });
   });
 
