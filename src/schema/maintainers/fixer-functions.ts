@@ -19,7 +19,7 @@ import {
   isSchemaStructStrict,
   isSchemaType,
 } from '../schema-guards';
-import { QueryPromise } from '../../interfaces';
+import { QueryPromise, QueryResult } from '../../interfaces';
 import {
   addColumn,
   createTable,
@@ -51,7 +51,7 @@ const MAX_VAR_CHAR = 255;
 
 export function createColumn(
   query: QueryPromise<any>, table: string, column: string, prop: SchemaStructProp
-) {
+): Promise<QueryResult<any>> {
   const columnString = createColumnFromProp(column, prop);
 
   return query(`${addColumn(table)} ${columnString}`);
@@ -59,7 +59,7 @@ export function createColumn(
 
 export function setColumnNullConstraint(
   query: QueryPromise<any>, table: string, column: string, prop: SchemaStructProp
-) {
+): Promise<QueryResult<any>> {
   if (hasConstraint('NotNull', prop)) {
     return query(setNotNull(table, column));
   }

@@ -1,13 +1,13 @@
-import { queryStream } from 'sql-tables';
+import { query } from '@ch1/sql-tables';
 import { randomName } from './names';
 
 
 export function selectUsers() {
-  return queryStream('SELECT * FROM users');
+  return query('SELECT * FROM users');
 }
 
 export function insertRandomUser() {
-  return queryStream(
+  return query(
     'INSERT INTO users (nameFirst, nameLast, age) VALUES ($1, $2, $3)',
     [
       randomName(),

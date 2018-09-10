@@ -23,25 +23,23 @@ export const api: Handler[] = [
 
 function getUsers(req: Request, res: Response) {
   const partial: any[] = [];
-  selectUsers().subscribe((result) => { 
+  selectUsers().then((result) => { 
     partial.push(result);
+    res.send(partial);
   }, (err) => {
     console.log('Error: getUsers:', err);
     res.status(500);
     res.send({ error: 'could not get users'});
-  }, () => {
-    res.send(partial);
   });
 }
 
 function postRandomUser(req: Request, res: Response) {
-  insertRandomUser().subscribe(() => {
+  insertRandomUser().then(() => {
     console.log('pr next');
-  }, (err) => {
+    res.sendStatus(200);
+  }).catch((err: Error) => {
     console.log('Error: postRandom:', err);
     res.status(500);
     res.send({ error: 'could not post random'});
-  }, () => {
-    res.sendStatus(200);
   });
 }

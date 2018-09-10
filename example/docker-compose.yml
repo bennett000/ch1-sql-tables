@@ -16,7 +16,7 @@ services:
     depends_on:
      - "postgres"
     volumes:
-     - .:/opt/sql-tables-example:ro
+     - ../:/opt/sql-tables:ro
   postgres:
     image: postgres
     restart: always

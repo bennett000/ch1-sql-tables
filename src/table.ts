@@ -15,7 +15,6 @@ import { pool } from './db-connect';
 import {
   isString,
   partial,
-  pluck,
   sql,
   warn,
   toIntBetweenOptional,

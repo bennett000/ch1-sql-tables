@@ -12,7 +12,7 @@ const config = {
   database: dbName,
   password: process.env.SQLT_PG_PASS || 'this-is-dev',
   host: process.env.SQLT_PG_HOST || 'localhost',
-  port: process.env.SQLT_PG_PORT || 5432,
+  port: parseInt(process.env.SQLT_PG_PORT, 10) || 5432,
   max: 30,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

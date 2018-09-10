@@ -3,7 +3,7 @@ import {
   strictify,
   Schema,
   SchemaStrict,
-} from 'sql-tables';
+} from '@ch1/sql-tables';
 
 /** This could easily be JSON */
 const jsonSchema: Schema = {

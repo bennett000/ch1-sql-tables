@@ -13,7 +13,7 @@ import {
   setColumnNullConstraint,
   StructContainer,
 } from './fixer-functions';
-import { QueryPromise } from '../../interfaces';
+import { QueryPromise, QueryResult } from '../../interfaces';
 import { findCaseInsensitivePropInObj, log, objReduce } from '../../util';
 
 export { mutateStructIntoSchemaStructs } from './fixer-functions';
@@ -91,7 +91,7 @@ export function generateFixes(
 }
 
 export function nullFixMapper(query: QueryPromise<any>, schema: SchemaStrict) {
-  return  (sv: SchemaValidation) => {
+  return  (sv: SchemaValidation): Promise<QueryResult<any>> => {
     const [table, column] = sv.name.split('.');
     /**
      * This is a touch optimistic, but given validations are produced from the
@@ -107,7 +107,7 @@ export function nullFixMapper(query: QueryPromise<any>, schema: SchemaStrict) {
 }
 
 export function columnAddMapper(query: QueryPromise<any>, schema: SchemaStrict) {
-  return (sv: SchemaValidation) => {
+  return (sv: SchemaValidation): Promise<QueryResult<any>> => {
     const [table, column] = sv.name.split('.');
     /**
      * This is a touch optimistic, but given validations are produced from the

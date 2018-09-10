@@ -1,25 +1,23 @@
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/do';
 import {
-  queryStream,
+  query,
   SchemaValidation,
   validateAndFixDatabase,
-} from 'sql-tables';
+} from '@ch1/sql-tables';
 import { initServer } from './server';
 import { schema } from './schema';
 import { api } from './api';
 
-const init = validateAndFixDatabase(queryStream, schema)
-  .map((sv: SchemaValidation[]) => sv.length ?
+const init = validateAndFixDatabase(query, schema)
+.then((sv: SchemaValidation[]) => sv.length ?
     console.log('Schema validation issues:', sv) :
     console.log('Schema validation okay.', sv)
   )
-  .do(() => initServer(api));
+  .then(() => initServer(api));
 
 initialize();
 
 function initialize() {
-  init.subscribe(() => { }, (err: Error) => {
+  init.then(() => { }, (err: Error) => {
     if (err.message.indexOf('the database system is starting up') >= 0) {
       console.log('Database is still booting, retrying in three seconds');
       setTimeout(initialize, 3000);
