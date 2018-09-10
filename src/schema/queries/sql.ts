@@ -1,15 +1,14 @@
 import { dbName } from '../../db-connect';
 import { toString } from '../../util';
-import { QueryStream } from '../../table';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/toArray';
+import { QueryPromise } from '../../interfaces';
+import { pluckRows } from '../../table';
 
 export interface InfoSchemaTable {
   table_name: string
 }
 
 export const listTables = (
-  query: QueryStream<InfoSchemaTable>,
+  query: QueryPromise<InfoSchemaTable>,
 ) => query(`
   SELECT table_name 
     FROM information_schema.tables 
@@ -17,7 +16,7 @@ export const listTables = (
       AND table_schema = 'public' 
       AND table_catalog = $1
     ORDER BY table_type, table_name
-`, [dbName]);
+`, [dbName]).then(pluckRows);
 
 
 export interface InfoSchemaColumn {
@@ -30,40 +29,40 @@ export interface InfoSchemaColumn {
 }
 
 export const listColumns = (
-  query: QueryStream<InfoSchemaColumn>,
+  query: QueryPromise<InfoSchemaColumn>,
   table: string,
 ) => query(`
   SELECT column_name
     FROM information_schema.columns
     WHERE table_schema = $1
       AND table_name   = $2
-`, [dbName, toString(table)]);
+`, [dbName, toString(table)])
+.then(pluckRows);
 
 export const listAllColumns:
-  (query: QueryStream<InfoSchemaColumn>) => Observable<InfoSchemaColumn> =
-  (query: QueryStream<InfoSchemaColumn>) => query(`
+  (query: QueryPromise<InfoSchemaColumn>) => Promise<InfoSchemaColumn[]> =
+  (query: QueryPromise<InfoSchemaColumn>) => query(`
   SELECT column_name, table_name, data_type, character_maximum_length, 
     is_nullable, numeric_precision
     FROM information_schema.columns
     WHERE table_schema = 'public' AND table_catalog = $1
-`, [dbName]);
+`, [dbName]).then(pluckRows);
 
 export const createTable:
   (
-    query: QueryStream<any>,
+    query: QueryPromise<any>,
     tableName: string,
     columnsAndConstraints: string[]
-  ) => Observable<any[]> =
+  ) => Promise<any[]> =
  /** note I don't feel great about not escaping this :/ but it's not supported */
   (
-    query: QueryStream<any>,
+    query: QueryPromise<any>,
     tableName: string,
     columnsAndConstraints: string[]
   ) => {
     const q =
       `CREATE TABLE ${tableName} (${columnsAndConstraints.join(', ').trim()});`;
-    return query(q)
-      .toArray();
+    return query(q).then(pluckRows);
 };
 
 

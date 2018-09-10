@@ -1,5 +1,3 @@
-import { Observable } from 'rxjs';
-import 'rxjs/operator/concat';
 import {
   NotInCode,
   NotInDb,
@@ -25,7 +23,7 @@ import {
   partial,
   pluck,
 } from '../../util';
-import { QueryStream } from '../../table';
+import { QueryPromise } from '../../interfaces';
 import { createColumnName, typeCheckColumn } from './checkers-types';
 
 const tableName = 'table_name';
@@ -33,21 +31,24 @@ const mapTableName: (arg: any) => string = <any>partial(pluck, tableName);
 const hasTableName: (arg: any) => boolean = <any>partial(hasProp, tableName);
 
 export function listTableNames(
-  query: QueryStream<InfoSchemaTable>
-): Observable<string> {
+  query: QueryPromise<InfoSchemaTable>
+): Promise<string[]> {
   return listTables(query)
-    .filter(hasTableName)
-    .map(mapTableName)
+    .then((tables) => {
+      return tables.filter(hasTableName)
+        .map(mapTableName);
+    });
 }
 
 export function fetchTablesAndCheckIfInCode(
-  query: QueryStream<InfoSchemaTable>,
+  query: QueryPromise<InfoSchemaTable>,
   schema: SchemaStrict
-): Observable<SchemaValidationContainer[]> {
+): Promise<SchemaValidationContainer[]> {
 
   return listTableNames(query)
-    .map(createCheckForTableInCode(schema))
-    .toArray();
+  .then((names: string[]) => {
+    return names.map(createCheckForTableInCode(schema));
+  });
 }
 
 export function findColumnInSchema(
@@ -76,24 +77,24 @@ export function createInfoSchemaToValidationContainer(schema: SchemaStrict) {
         type: 'column',
       },
       name: createColumnName(col.table_name, col.column_name),
-    };
+    } as SchemaValidationContainer;
   };
 }
 
 export function fetchColumnsAndCheckIfInCode(
-  query: QueryStream<InfoSchemaColumn>,
+  query: QueryPromise<InfoSchemaColumn>,
   schema: SchemaStrict
-): Observable<SchemaValidationContainer[]> {
-
+): Promise<SchemaValidationContainer[]> {
   const filterByTable =
     (col: InfoSchemaColumn) => findCaseInsensitivePropInObj(
       schema, col.table_name
     ) ? true : false
 
   return listAllColumns(query)
-    .filter(filterByTable)
-    .map(createInfoSchemaToValidationContainer(schema))
-    .toArray() as any;
+    .then((columns) => {
+      return columns.filter(filterByTable)
+        .map(createInfoSchemaToValidationContainer(schema));
+    });
 }
 
 export function createCheckForTableInCode(dict: SchemaStrict) {
@@ -179,24 +180,29 @@ export function flattenSchemaValidationContainers(
 }
 
 export function validateColumns(
-  query: QueryStream<InfoSchemaColumn>,
+  query: QueryPromise<InfoSchemaColumn>,
   schema: SchemaStrict,
   svc: SchemaValidationCollection
-): Observable<SchemaValidation[]> {
+): Promise<SchemaValidation[]> {
   return fetchColumnsAndCheckIfInCode(query, schema)
-    .map(flattenSchemaValidationContainers)
-    .map((innerSvc: SchemaValidationCollection) => checkForColumnInDb(
-        schema, innerSvc.names)
-      .concat(innerSvc.errors)
-      .concat(svc.errors)
-    );
+    .then((columns) => {
+      const flattened = flattenSchemaValidationContainers(columns)
+
+      return checkForColumnInDb(
+        schema, flattened.names)
+        .concat(flattened.errors)
+        .concat(svc.errors)
+    });
 }
 
-export function validateTables(query: QueryStream<any>, schema: SchemaStrict) {
+export function validateTables(query: QueryPromise<any>, schema: SchemaStrict) {
   return fetchTablesAndCheckIfInCode(query, schema)
-    .map(flattenSchemaValidationContainers)
-    .map((svc: SchemaValidationCollection) => ({
-      errors: svc.errors.concat(checkForTableInDb(schema, svc.names)),
-      names: svc.names,
-    }));
+    .then((tables) => {
+      const flattened = flattenSchemaValidationContainers(tables);
+
+      return ({
+        errors: flattened.errors.concat(checkForTableInDb(schema, flattened.names)),
+        names: flattened.names,
+      });
+    });
 }

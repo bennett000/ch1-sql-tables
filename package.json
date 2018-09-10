@@ -32,7 +32,6 @@
     "postgres",
     "schema",
     "dal",
-    "rxjs",
     "reactive",
     "stream",
     "typescript"
@@ -41,8 +40,7 @@
   "license": "LGPL-3.0",
   "dependencies": {
     "chalk": "^2.4.1",
-    "pg": "^7.4.3",
-    "rxjs": "^5.5.8"
+    "pg": "^7.4.3"
   },
   "devDependencies": {
     "@types/jest": "^23.3.2",

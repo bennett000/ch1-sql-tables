@@ -1,5 +1,3 @@
-import { Observable } from 'rxjs/Observable';
-import { Observer } from 'rxjs/Observer';
 import {
   Schema,
   SchemaProp,
@@ -266,30 +264,24 @@ describe('Maintainer Fixer functions', () => {
   });
 
   describe('createTableFromStruct', () => {
-    it('should create an empty table', (done) => {
-      createTableFromStruct(
+    it('should create an empty table', () => {
+      return createTableFromStruct(
         (query: string) => {
           expect(query).toBe('CREATE TABLE thing ();');
-          return Observable.create((o: Observer<any>) => {
-            o.next(undefined);
-            o.complete();
-          });
+          return Promise.resolve({ rows: [] });
         },
         'thing',
         (<SchemaPropStrict>{ struct: {} }),
-      ).subscribe(() => done());
+      );
     });
 
-    it('should create a simple table', (done) => {
-      createTableFromStruct(
+    it('should create a simple table', () => {
+      return createTableFromStruct(
         (query: string) => {
           expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255), columnB varchar(255));'
           );
-          return Observable.create((o: Observer<any>) => {
-            o.next(undefined);
-            o.complete();
-          });
+          return Promise.resolve({ rows: [] });
         },
         'thing',
         (<SchemaPropStrict>{
@@ -297,11 +289,11 @@ describe('Maintainer Fixer functions', () => {
             columnA: { type: 'String' },
             columnB: { type: 'String' },
           } }),
-      ).subscribe(() => done());
+      );
     });
 
-    it('should create a table with a primary key and foreign keys', (done) => {
-      createTableFromStruct(
+    it('should create a table with a primary key and foreign keys', () => {
+      return createTableFromStruct(
         (query: string) => {
           expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255) NOT NULL, ' +
@@ -309,10 +301,7 @@ describe('Maintainer Fixer functions', () => {
             'columnC integer  REFERENCES b (a), ' +
             'columnD timestamp default current_timestamp);'
           );
-          return Observable.create((o: Observer<any>) => {
-            o.next(undefined);
-            o.complete();
-          });
+          return Promise.resolve({ rows: [] });
         },
         'thing',
         (<SchemaPropStrict>{
@@ -322,11 +311,11 @@ describe('Maintainer Fixer functions', () => {
             columnC: { type: 'UInt32', relation: { prop: 'a', struct: 'b' } },
             columnD: { type: 'TimestampS', constraints: [ 'Automatic' ] },
           } }),
-      ).subscribe(() => done());
+      );
     });
 
-    it('should create a table with composite keys', (done) => {
-      createTableFromStruct(
+    it('should create a table with composite keys', () => {
+      return createTableFromStruct(
         (query: string) => {
           expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255), ' +
@@ -337,10 +326,7 @@ describe('Maintainer Fixer functions', () => {
             'PRIMARY KEY(columnA, columnB)' +
             ');'
           );
-          return Observable.create((o: Observer<any>) => {
-            o.next(undefined);
-            o.complete();
-          });
+          return Promise.resolve({ rows: [] });
         },
         'thing',
         (<SchemaPropStrict>{
@@ -353,11 +339,11 @@ describe('Maintainer Fixer functions', () => {
           primaryKey: ['columnA', 'columnB'],
           unique: [ ['columnC', 'columnD' ] ],
         }),
-      ).subscribe(() => done());
+      );
     });
 
-    it('should create a table with composite foreign keys', (done) => {
-      createTableFromStruct(
+    it('should create a table with composite foreign keys', () => {
+      return createTableFromStruct(
         (query: string) => {
           expect(query).toBe(
             'CREATE TABLE thing (columnA varchar(255), ' +
@@ -367,10 +353,7 @@ describe('Maintainer Fixer functions', () => {
             'FOREIGN KEY (columnA, columnB) REFERENCES other-thing (fA, fB)' +
             ');'
           );
-          return Observable.create((o: Observer<any>) => {
-            o.next(undefined);
-            o.complete();
-          });
+          return Promise.resolve({ rows: [] });
         },
         'thing',
         (<SchemaPropStrict>{
@@ -386,7 +369,7 @@ describe('Maintainer Fixer functions', () => {
             struct: 'other-thing',
           } ],
         }),
-      ).subscribe(() => done());
+      );
     });
   });
 });

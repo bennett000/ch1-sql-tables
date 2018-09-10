@@ -15,6 +15,7 @@ import { pool } from './db-connect';
 import {
   isString,
   partial,
+  pluck,
   sql,
   warn,
   toIntBetweenOptional,
@@ -442,6 +443,6 @@ export function createCrud<T>(schema: SchemaStrict): SqlCrud<T> {
   }, {} as SqlCrud<T>);
 }
 
-function pluckRows<T>(result: QueryResult<T>) {
+export function pluckRows<T>(result: QueryResult<T>) {
   return result.rows;
 }

@@ -1,4 +1,3 @@
-import { Observable } from 'rxjs/Observable';
 import {
   Schema,
   SchemaItem,
@@ -20,7 +19,7 @@ import {
   isSchemaStructStrict,
   isSchemaType,
 } from '../schema-guards';
-import { QueryStream } from '../../table';
+import { QueryPromise } from '../../interfaces';
 import {
   addColumn,
   createTable,
@@ -51,7 +50,7 @@ import {
 const MAX_VAR_CHAR = 255;
 
 export function createColumn(
-  query: QueryStream<any>, table: string, column: string, prop: SchemaStructProp
+  query: QueryPromise<any>, table: string, column: string, prop: SchemaStructProp
 ) {
   const columnString = createColumnFromProp(column, prop);
 
@@ -59,7 +58,7 @@ export function createColumn(
 }
 
 export function setColumnNullConstraint(
-  query: QueryStream<any>, table: string, column: string, prop: SchemaStructProp
+  query: QueryPromise<any>, table: string, column: string, prop: SchemaStructProp
 ) {
   if (hasConstraint('NotNull', prop)) {
     return query(setNotNull(table, column));
@@ -111,8 +110,8 @@ export function createColumnFromProp(name: string, prop: SchemaStructProp) {
 }
 
 export function createTableFromStruct(
-  query: QueryStream<any>, name: string, s: SchemaPropStrict
-): Observable<any> {
+  query: QueryPromise<any>, name: string, s: SchemaPropStrict
+): Promise<any> {
   return createTable(query, name, objReduce(
     s.struct,
     (state: string[], el: SchemaStructProp, name: string) => {

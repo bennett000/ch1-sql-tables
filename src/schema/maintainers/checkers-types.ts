@@ -1,4 +1,3 @@
-import 'rxjs/operator/concat';
 import { objReduce } from '../../util';
 import {
   InfoSchemaColumn,
