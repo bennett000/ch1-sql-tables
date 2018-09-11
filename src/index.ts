@@ -1,18 +1,9 @@
-export {
-  createCrud,
-  transactionStart as transactionBegin,
-  transactionEnd as transactionCommit,
-  transactionRollBack,
-  query,
-  insert,
-  update,
-  deleteFrom as deleteStream,
-  selectWhere,
-  select,
-} from './table';
+export { create } from './main';
 
 export {
-  TableRow,
+  SqlConfig,
+  SqlCrud,
+  SqlDb,
 } from './interfaces';
 
 export {
@@ -24,7 +15,5 @@ export {
   SchemaValidation,
   validateAndFixDatabase,
 } from './schema/schema';
-
-export { deepFreeze, error, log, toGtZeroIntMax, toStringMax } from './util';
 
 export { writeTsFromSchema } from './schema/schema-to-typescript';

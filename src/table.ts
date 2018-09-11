@@ -1,5 +1,4 @@
-import { PoolClient, Pool } from 'pg';
-import { QueryResult, SqlCrud, TableRow } from './interfaces';
+import { Pool, PoolClient, QueryResult, SqlCrud, TableRow, QueryFn } from './interfaces';
 import {
   SchemaStrict,
   SchemaStructStrict,
@@ -11,57 +10,28 @@ import {
   isSchemaType,
 } from './schema/schema-guards';
 import { toGeneral,  toSql } from './type-converters';
-import { pool } from './db-connect';
 import {
   isString,
-  partial,
   sql,
   warn,
   toIntBetweenOptional,
   identity,
 } from './util';
 
-export const getClient: () => Promise<PoolClient> =
-  <any>partial(getClientFrom, pool);
-
 export const isValidResult = (result: QueryResult<any>) => (result &&
 Array.isArray(result.rows) &&
 result.rows.length) ? true : false;
 
-export function getClientFrom(p: () => Pool): Promise<PoolClient> {
-  return p().connect();
-}
-
-export function createPgQuery<RowType>(
-  client: PoolClient, queryString: string, params?: any[]
+export function query<RowType>(
+  queryFn: QueryFn<RowType>, queryString: string, params?: any[]
 ): Promise<QueryResult<RowType>> {
   if (params) {
     sql(`Run query: ${queryString} with params: ${params}`);
-    return client.query(queryString, params) as Promise<QueryResult<RowType>>;
+    return queryFn(queryString, params) as Promise<QueryResult<RowType>>;
   }
 
   sql(`Run query: ${queryString}`);
-  return client.query(queryString) as Promise<QueryResult<RowType>>;
-}
-
-/**
- * Internal function to create a query that returns its _entire_ result as an
- * observable
- */
-export function createQueryPromise<RowType>(
-  client: PoolClient, queryString: string, params?: any[]
-): Promise<QueryResult<RowType>> {
-  return createPgQuery<RowType>(client, queryString, params);
-}
-
-
-export function query<RowType>(
-  queryString: string, params?: any[]
-): Promise<QueryResult<RowType>>  {
-  return getClient()
-    .then((client: PoolClient) => createQueryPromise<RowType>(
-      client, queryString, params
-    ));
+  return queryFn(queryString) as Promise<QueryResult<RowType>>;
 }
 
 export function getStruct(
@@ -180,7 +150,7 @@ export function selectWhereValidator(
 }
 
 export function selectWhere<RowType>(
-  schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
+  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
 ): Promise<RowType[]> {
   const tableSchema = selectWhereValidator(schema, tableName, cols, vals);
   if (tableSchema instanceof Error) {
@@ -192,15 +162,15 @@ export function selectWhere<RowType>(
 
   const q = createSelectWhereQuery(tableName, validColVals.cols);
 
-  return query<RowType>(q, validColVals.vals).then(pluckRows);
+  return query<RowType>(queryFn, q, validColVals.vals).then(pluckRows);
 }
 
 export function select<RowType>(
-  schema: SchemaStrict, tableName: string, cols: string[] = []
+  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[] = []
 ): Promise<RowType[]> {
   const q = createSelectAllQuery(tableName, cols);
 
-  return query<RowType>(q).then(pluckRows);
+  return query<RowType>(queryFn, q).then(pluckRows);
 }
 
 function colsAndValsFromColsOrObject<T>(
@@ -229,6 +199,7 @@ function colsAndValsFromColsOrObject<T>(
 }
 
 export function insert<T>(
+  queryFn: QueryFn<any>,
   schema: SchemaStrict, 
   tableName: string, 
   colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
@@ -254,14 +225,14 @@ export function insert<T>(
 
   sql('Attempting query', q);
 
-  return query(q, validColVals.vals);
+  return query(queryFn, q, validColVals.vals);
 }
 
 export function update<T>(
+  queryFn: QueryFn<any>,
   schema: SchemaStrict, 
   tableName: string, 
   idProps: string[],
-  idValues: Array<number | string>,
   colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
   vals: any[] = [],
 ): Promise<QueryResult<any>> {
@@ -284,10 +255,11 @@ export function update<T>(
 
   sql('Attempting query', q);
 
-  return query(q, validColVals.vals);
+  return query(queryFn, q, validColVals.vals);
 }
 
 export function deleteFrom(
+  queryFn: QueryFn<any>,
   schema: SchemaStrict, 
   tableName: string, 
   idProps: string[],
@@ -302,7 +274,7 @@ export function deleteFrom(
 
   sql('Attempting query', q);
 
-  return query(q, idValues);
+  return query(queryFn, q, idValues);
 }
 
 export function reduceByKeys(keys: number[]) {
@@ -408,35 +380,69 @@ function makeParamReducer(chunkSize?: number) {
 }
 
 export function transactionStart(
+  pool: Pool,
   isolationLevel?: string
-): Promise<QueryResult<any>> {
-  if (isolationLevel) {
-    return query(`BEGIN TRANSACTION ISOLATION LEVEL ${isolationLevel};`);
-  }
-  return query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;');
+): Promise<PoolClient> {
+  return pool.connect()
+    .then((client: PoolClient) => {
+      if (isolationLevel) {
+        return query(client.query.bind(client), `BEGIN TRANSACTION ISOLATION LEVEL ${isolationLevel};`)
+          .then(() => client);
+      }
+      return query(client.query.bind(client), 'BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
+        .then(() => client);
+    });
 }
 
-export function transactionEnd(): Promise<QueryResult<any>> {
-  return query('END TRANSACTION;');
+export function transactionEnd(client: PoolClient): Promise<QueryResult<any>> {
+  return query(client.query.bind(client), 'END TRANSACTION;');
 }
 
-export function transactionRollBack(err?: Error): Promise<QueryResult<any>> {
+export function transactionRollBack(client: PoolClient, err?: Error): Promise<QueryResult<any>> {
   sql('Transaction Rollback', err ?
     err.message + '\nStack Trace: ' + err.stack :
     undefined);
-  return query('ROLLBACK;');
+  return query(client.query.bind(client), 'ROLLBACK;');
 }
 
-export function createCrud<T>(schema: SchemaStrict): SqlCrud<T> {
+export function createCrud<T>(
+  queryFn: QueryFn<any>,
+  schema: SchemaStrict
+): SqlCrud<T> {
   return Object.keys(schema).reduce((
     crud: SqlCrud<T>, el: string
   ) => {
     (crud as any)[el] = {
-      insert: insert.bind(null, schema, el),
-      update: update.bind(null, schema, el),
-      delete: deleteFrom.bind(null, schema, el),
-      select: select.bind(null, schema, el),
-      selectWhere: selectWhere.bind(null, schema, el),
+      insert: insert.bind(null, queryFn, schema, el),
+      update: update.bind(null, queryFn, schema, el),
+      delete: deleteFrom.bind(null, queryFn, schema, el),
+      select: select.bind(null, queryFn, schema, el),
+      selectWhere: selectWhere.bind(null, queryFn, schema, el),
+    transactionDelete: (
+      client: PoolClient,
+      idProps: string[], 
+      idValues: Array<number | string>
+    ) => deleteFrom(client.query.bind(client), schema, el, idProps, idValues),
+    transactionInsert: <T>(
+      client: PoolClient,
+      colsOrObject: string[] | { [P in keyof T]?: T[P] },
+      vals?: any[],
+    ) => insert<T>(client.query.bind(client), schema, el, colsOrObject, vals),
+    transactionUpdate: <T>(
+      client: PoolClient,
+      idProps: string[],
+      colsOrObject: string[] | { [P in keyof T]?: T[P] },
+      vals: any[],
+    ) => update<T>(client.query.bind(client), schema, el, idProps, colsOrObject, vals),
+    transactionSelect: <RowType>(
+      client: PoolClient,
+      el: string,
+      cols?: string[],
+    ) => select<RowType>(client.query.bind(client), schema, el, cols),
+    transactionSelectWhere: <RowType>(
+      client: PoolClient,
+      el: string, cols: string[], vals: any[]
+    ) => selectWhere<RowType>(client.query.bind(client), schema, el, cols, vals),
     };
     return crud;
   }, {} as SqlCrud<T>);

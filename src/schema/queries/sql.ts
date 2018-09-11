@@ -1,6 +1,5 @@
-import { dbName } from '../../db-connect';
 import { toString } from '../../util';
-import { QueryPromise } from '../../interfaces';
+import { QueryFn } from '../../interfaces';
 import { pluckRows } from '../../table';
 
 export interface InfoSchemaTable {
@@ -8,7 +7,8 @@ export interface InfoSchemaTable {
 }
 
 export const listTables = (
-  query: QueryPromise<InfoSchemaTable>,
+  dbName: string,
+  query: QueryFn<InfoSchemaTable>,
 ) => query(`
   SELECT table_name 
     FROM information_schema.tables 
@@ -29,7 +29,8 @@ export interface InfoSchemaColumn {
 }
 
 export const listColumns = (
-  query: QueryPromise<InfoSchemaColumn>,
+  dbName: string,
+  query: QueryFn<InfoSchemaColumn>,
   table: string,
 ) => query(`
   SELECT column_name
@@ -40,8 +41,8 @@ export const listColumns = (
 .then(pluckRows);
 
 export const listAllColumns:
-  (query: QueryPromise<InfoSchemaColumn>) => Promise<InfoSchemaColumn[]> =
-  (query: QueryPromise<InfoSchemaColumn>) => query(`
+  (dbName: string, query: QueryFn<InfoSchemaColumn>) => Promise<InfoSchemaColumn[]> =
+  (dbName: string, query: QueryFn<InfoSchemaColumn>) => query(`
   SELECT column_name, table_name, data_type, character_maximum_length, 
     is_nullable, numeric_precision
     FROM information_schema.columns
@@ -50,13 +51,13 @@ export const listAllColumns:
 
 export const createTable:
   (
-    query: QueryPromise<any>,
+    query: QueryFn<any>,
     tableName: string,
     columnsAndConstraints: string[]
   ) => Promise<any[]> =
  /** note I don't feel great about not escaping this :/ but it's not supported */
   (
-    query: QueryPromise<any>,
+    query: QueryFn<any>,
     tableName: string,
     columnsAndConstraints: string[]
   ) => {

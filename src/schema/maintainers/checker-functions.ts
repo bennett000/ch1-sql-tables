@@ -23,7 +23,7 @@ import {
   partial,
   pluck,
 } from '../../util';
-import { QueryPromise } from '../../interfaces';
+import { QueryFn } from '../../interfaces';
 import { createColumnName, typeCheckColumn } from './checkers-types';
 
 const tableName = 'table_name';
@@ -31,9 +31,10 @@ const mapTableName: (arg: any) => string = <any>partial(pluck, tableName);
 const hasTableName: (arg: any) => boolean = <any>partial(hasProp, tableName);
 
 export function listTableNames(
-  query: QueryPromise<InfoSchemaTable>
+  dbName: string,
+  query: QueryFn<InfoSchemaTable>
 ): Promise<string[]> {
-  return listTables(query)
+  return listTables(dbName, query)
     .then((tables) => {
       return tables.filter(hasTableName)
         .map(mapTableName);
@@ -41,11 +42,12 @@ export function listTableNames(
 }
 
 export function fetchTablesAndCheckIfInCode(
-  query: QueryPromise<InfoSchemaTable>,
+  dbName: string,
+  query: QueryFn<InfoSchemaTable>,
   schema: SchemaStrict
 ): Promise<SchemaValidationContainer[]> {
 
-  return listTableNames(query)
+  return listTableNames(dbName, query)
   .then((names: string[]) => {
     return names.map(createCheckForTableInCode(schema));
   });
@@ -82,7 +84,8 @@ export function createInfoSchemaToValidationContainer(schema: SchemaStrict) {
 }
 
 export function fetchColumnsAndCheckIfInCode(
-  query: QueryPromise<InfoSchemaColumn>,
+  dbName: string,
+  query: QueryFn<InfoSchemaColumn>,
   schema: SchemaStrict
 ): Promise<SchemaValidationContainer[]> {
   const filterByTable =
@@ -90,7 +93,7 @@ export function fetchColumnsAndCheckIfInCode(
       schema, col.table_name
     ) ? true : false
 
-  return listAllColumns(query)
+  return listAllColumns(dbName, query)
     .then((columns) => {
       return columns.filter(filterByTable)
         .map(createInfoSchemaToValidationContainer(schema));
@@ -180,11 +183,12 @@ export function flattenSchemaValidationContainers(
 }
 
 export function validateColumns(
-  query: QueryPromise<InfoSchemaColumn>,
+  dbName: string,
+  query: QueryFn<InfoSchemaColumn>,
   schema: SchemaStrict,
   svc: SchemaValidationCollection
 ): Promise<SchemaValidation[]> {
-  return fetchColumnsAndCheckIfInCode(query, schema)
+  return fetchColumnsAndCheckIfInCode(dbName, query, schema)
     .then((columns) => {
       const flattened = flattenSchemaValidationContainers(columns)
 
@@ -195,8 +199,8 @@ export function validateColumns(
     });
 }
 
-export function validateTables(query: QueryPromise<any>, schema: SchemaStrict) {
-  return fetchTablesAndCheckIfInCode(query, schema)
+export function validateTables(dbName: string, query: QueryFn<any>, schema: SchemaStrict) {
+  return fetchTablesAndCheckIfInCode(dbName, query, schema)
     .then((tables) => {
       const flattened = flattenSchemaValidationContainers(tables);
 

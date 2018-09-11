@@ -1,15 +1,10 @@
 import {
-  PoolClient,
-} from 'pg';
-import {
   createInsertQuery,
-  createPgQuery,
-  createQueryPromise,
   createReduceCompoundInsertOrSelectResults,
-  getClientFrom,
   hasQueryError,
   isValidResult,
   reduceByKeys,
+  query,
   validatePropValsForInput,
 } from './table';
 
@@ -26,14 +21,14 @@ describe('table specs', () => {
     });
   });
 
-  describe('createPgQuery function', () => {
+  describe('query function', () => {
     it('should call the query with params if given params', (done) => {
       const params = ['hello', 'world'];
       const qf = (q: string, p: any[]) => {
         expect(p).toEqual(params);
         done();
       };
-      expect(createPgQuery(<PoolClient>{ query: qf }, 'hello', params));
+      expect(query(qf as any, 'hello', params));
     });
 
     it('should call the query without params if not given params', (done) => {
@@ -41,46 +36,10 @@ describe('table specs', () => {
         expect(p).toEqual(undefined);
         done();
       };
-      expect(createPgQuery(<PoolClient>{ query: qf }, 'hello'));
+      expect(query(qf as any, 'hello'));
     });
   });
 
-
-  describe('createQueryObservable function', () => {
-    let client: PoolClient;
-    let resolve: Function;
-    let reject: Function;
-
-    beforeEach(() => {
-      client = <PoolClient>(<any>{
-        query: () => (new Promise((p, f) => { resolve = p; reject = f; })),
-      });
-    });
-
-    it('should return a rejecting promise if client\'s query rejects',
-      (done) => {
-        createQueryPromise(client, 'hello', [])
-          .then(() => expect('this case should not happen').toEqual(undefined))
-          .catch((err: Error) => {
-            expect(err instanceof Error).toEqual(true);
-            done();
-          });
-        reject(new Error('fail case'));
-      });
-
-    it('should trigger a promise if client\'s query resolves',
-      () => {
-        const expectedThing = { test: 'hello' };
-        setTimeout(() => resolve(expectedThing), 0);
-        return createQueryPromise(client, 'hello', [])
-          .then((thing: any) => {
-            expect(thing).toEqual(expectedThing);
-          })
-          .catch((err: Error) => {
-            expect(err).toEqual(undefined);
-          });
-      });
-  });
 
   describe('createReduceCompoundInsertOrSelectResults function', () => {
     it('should throw if there are any errors', () => {
@@ -116,31 +75,6 @@ describe('table specs', () => {
       });
     });
 
-    it('should error if the callback gets an error', (done) => {
-      result = new Error('test passed!');
-      getClientFrom(pool)
-        .then(() => {
-          expect('this case should not happen').toEqual(undefined);
-        })
-        .catch((err: any) => {
-          expect(err instanceof Error).toEqual(true);
-          done();
-        });
-    });
-
-    it('should emit a client if everything is good', (done) => {
-      const expectedThing = { type: 'client technically' };
-      result = expectedThing;
-      getClientFrom(pool)
-        .then((thing: any) => {
-          expect(thing).toEqual(expectedThing);
-          done();
-        })
-        .catch((err) => {
-          expect('this case should not happen').toEqual(undefined);
-          done();
-        });
-    });
   });
 
   describe('hasQueryError', () => {

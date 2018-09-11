@@ -17,12 +17,13 @@ import {
 describe('checker functions', () => {
   describe('listTableNames function', () => {
     it('should return a promise', () => {
-      const tno = listTableNames(() => new Promise(resolve => resolve()));
+      const tno = listTableNames('my-db', () => new Promise(resolve => resolve()));
       expect(tno instanceof Promise).toBe(true);
     });
 
     it('should filter for truthy table_name\'s', () => {
       const testPromise = listTableNames(
+        'my-db', 
         () => new Promise(resolve => resolve({
           rows: [
             {}, { table_name: 'test' }, {},
@@ -53,7 +54,7 @@ describe('checker functions', () => {
 
   describe('fetchTablesAndCheckIfInCode function', () => {
     it('should return an observable', () => {
-      const o = fetchTablesAndCheckIfInCode(() => new Promise(resolve => resolve()), {});
+      const o = fetchTablesAndCheckIfInCode('my-db', () => new Promise(resolve => resolve()), {});
       expect(o instanceof Promise).toBe(true);
     });
   });
@@ -220,7 +221,7 @@ describe('checker functions', () => {
           });
         });
 
-      const o = fetchColumnsAndCheckIfInCode(queryFunction, {
+      const o = fetchColumnsAndCheckIfInCode('my-db', queryFunction, {
         'SOME-TABLE': {
           struct: {
             'SOME-COLUMN': {
