@@ -14,7 +14,8 @@ import {
   StructContainer,
 } from './fixer-functions';
 import { QueryResult, QueryFn } from '../../interfaces';
-import { findCaseInsensitivePropInObj, log, objReduce } from '../../util';
+import { log } from '../../util';
+import { findCaseInsensitivePropInObj, objReduce } from '@ch1/utility';
 
 export { mutateStructIntoSchemaStructs } from './fixer-functions';
 
@@ -253,8 +254,8 @@ export function validateAndFixDatabase(
       return vfc.fixes
         // run the promises in series, they're ordered!
         .reduce(
-          (p, fix) => p.then(() => fix()), 
-          Promise.resolve()
+          (p, fix) => p.then((results) => fix().then((newResult) => results.concat(newResult))), 
+          Promise.resolve([]),
         );
     });
 }

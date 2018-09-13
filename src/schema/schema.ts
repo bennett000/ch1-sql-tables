@@ -1,4 +1,4 @@
-import { Dictionary } from '../util';
+import { Dictionary } from '@ch1/utility';
 
 /* use strings for nicer JSON*/
 export type SchemaNumeric =

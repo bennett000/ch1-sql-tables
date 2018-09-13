@@ -11,10 +11,10 @@ export interface SqlConfig {
   database: string,
   password: string,
   host: string,
-  port: number,
-  max: number,
-  idleTimeoutMillis: number,
-  connectionTimeoutMillis: number,
+  port?: number,
+  max?: number,
+  idleTimeoutMillis?: number,
+  connectionTimeoutMillis?: number,
 };
 export interface SqlDb<Tables> {
   afterDestroy?: Promise<any>;
@@ -76,7 +76,7 @@ export interface SqlDb<Tables> {
     tableName: string, cols: string[], vals: any[]
   ): Promise<RowType[]>;
   tables: SqlCrud<Tables>;
-  validateAndFixDatabase(fixControls: FixControls): Promise<SchemaValidation[]>;
+  validateAndFixDatabase(fixControls?: FixControls): Promise<SchemaValidation[]>;
 }
 export interface QueryResult<RowType> {
   rows: RowType[];

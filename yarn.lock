@@ -16,6 +16,10 @@
     esutils "^2.0.2"
     js-tokens "^3.0.0"
 
+"@ch1/utility@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@ch1/utility/-/utility-0.7.0.tgz#b60d54be559a92311cac7b577707d27acec5da6e"
+
 "@types/events@*":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@types/events/-/events-1.2.0.tgz#81a6731ce4df43619e5c8c945383b3e62a89ea86"

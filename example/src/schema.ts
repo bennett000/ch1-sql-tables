@@ -1,9 +1,9 @@
 import {
-  deepFreeze,
   strictify,
   Schema,
   SchemaStrict,
 } from '@ch1/sql-tables';
+import { deepFreeze } from '@ch1/utility'
 
 /** This could easily be JSON */
 const jsonSchema: Schema = {

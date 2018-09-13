@@ -1,5 +1,10 @@
 import { Pool, PoolClient, QueryResult, SqlCrud, TableRow, QueryFn } from './interfaces';
 import {
+  isString,
+  toIntBetweenOptional,
+  identity,
+} from '@ch1/utility';
+import {
   SchemaStrict,
   SchemaStructStrict,
   SchemaStructProp,
@@ -11,11 +16,8 @@ import {
 } from './schema/schema-guards';
 import { toGeneral,  toSql } from './type-converters';
 import {
-  isString,
   sql,
   warn,
-  toIntBetweenOptional,
-  identity,
 } from './util';
 
 export const isValidResult = (result: QueryResult<any>) => (result &&

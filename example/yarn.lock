@@ -2,6 +2,10 @@
 # yarn lockfile v1
 
 
+"@ch1/utility@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@ch1/utility/-/utility-0.7.0.tgz#b60d54be559a92311cac7b577707d27acec5da6e"
+
 "@types/body-parser@*":
   version "1.16.8"
   resolved "https://registry.yarnpkg.com/@types/body-parser/-/body-parser-1.16.8.tgz#687ec34140624a3bec2b1a8ea9268478ae8f3be3"

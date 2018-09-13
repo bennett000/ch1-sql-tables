@@ -1,4 +1,9 @@
 import {
+  Dictionary,
+  partial,
+  objReduce,
+} from '@ch1/utility';
+import {
   Schema,
   SchemaItem,
   SchemaRelationComposite,
@@ -41,10 +46,7 @@ import {
 } from '../type-mappings';
 import {
   augmentObjIfNew,
-  Dictionary,
   log,
-  partial,
-  objReduce,
 } from '../../util';
 
 const MAX_VAR_CHAR = 255;
@@ -306,7 +308,7 @@ export function strictifySchemaStruct(
   return objReduce(
     struct,
     (s: SchemaStructStrict, e, i) => {
-      s[i] = strictifySchemaStructItem(e);
+      s[i] = strictifySchemaStructItem(e as any);
       return s;
     },
     {}

@@ -6,7 +6,7 @@ import {
   SchemaStruct,
   SchemaStructStrict,
 } from '../schema';
-import { noop } from '../../util';
+import { noop } from '@ch1/utility';
 import {
   CircularDepStore,
   createCrIterator,

@@ -57,26 +57,6 @@ describe('table specs', () => {
     });
   });
 
-  describe('getClientFrom function', () => {
-    let pool: () => any;
-    let result: any;
-
-    beforeEach(() => {
-      pool = () => ({
-        connect: () => {
-          return new Promise((resolve, reject) => {
-            if (result instanceof Error) {
-              reject(result);
-            } else {
-              resolve(result);
-            }
-          });
-        },
-      });
-    });
-
-  });
-
   describe('hasQueryError', () => {
     it('should return state if state is >= 0', () => {
       expect(hasQueryError(0, [], 7)).toEqual(0);

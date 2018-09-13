@@ -22,7 +22,7 @@ import {
   objReduce,
   partial,
   pluck,
-} from '../../util';
+} from '@ch1/utility';
 import { QueryFn } from '../../interfaces';
 import { createColumnName, typeCheckColumn } from './checkers-types';
 

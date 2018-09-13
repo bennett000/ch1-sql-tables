@@ -1,4 +1,4 @@
-import { toString } from '../../util';
+import { toString } from '@ch1/utility';
 import { QueryFn } from '../../interfaces';
 import { pluckRows } from '../../table';
 

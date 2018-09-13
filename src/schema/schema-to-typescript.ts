@@ -1,5 +1,5 @@
 import { writeFile } from 'fs';
-import { objReduce } from '../util';
+import { objReduce } from '@ch1/utility';
 import {
   SchemaPropStrict,
   SchemaStrict,
