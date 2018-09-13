@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.0
+
+- generate typescript now produces a summary interface
+
 ## 1.1.1
 
 - strictify the schema in the CLI tool
