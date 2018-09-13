@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 const { strictify, writeTsFromSchema } = require('./dist');
 
-const { join } = require('path');
 const { readFileSync } = require('fs');
 const ts = require('typescript');
 
@@ -56,8 +55,8 @@ function writeSchema() {
     console.log('Generating TypeScript from the schema', schemaPath);
 
     writeTsFromSchema(
-      join(tsPath),
-      schema
+      tsPath,
+      strictify(schema),
     ).then(() => {
       console.log('Wrote TypeScript to', tsPath);
     }).catch((err) => {
