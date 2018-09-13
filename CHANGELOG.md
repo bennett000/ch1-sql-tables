@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.1.0
+
+- generate typescript "binary"
+
 ## 1.0.1
 
 - transactionEnd now releases connection

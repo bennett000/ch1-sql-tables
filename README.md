@@ -17,6 +17,7 @@ sql vulnerabilities_
 
 * The excellent [node-postgress (pg)](https://node-postgres.com/ "Node Postgres Library") library to talk to a Postgres database
 * Chalk to add colour to the output
+* `require-from-string`, exclusively for the TypScript type generator
 
 ## Description
 
@@ -242,6 +243,40 @@ export interface SchemaRelation {
   struct: string;
 }
 ```
+
+### Generating TypeScript Types
+
+If you've installed `@ch1/sql-tables` in your project you should be able to
+use our CLI tool.  From your project route:
+
+`./node_modules/.bin/sql-tables.js /path/to/input-schema.ts /path/to/output.ts`
+
+This will generate TypeScript types from `input-schema.ts` and put them in `output.ts`
+
+_The tool assumes you've exported your schema using the name schema_
+
+```ts
+export const schema = { /* schema */ };
+```
+
+Optionally you can specify your own prop
+
+`./node_modules/.bin/sql-tables.js /path/to/input-schema.ts /path/to/output.ts myProp`
+
+```ts
+export const myProp = { /* schema */ };
+```
+
+_If you're using the script in your `package.json`'s `scripts` section you 
+do not need the `./node_modules/.bin` prefix_
+
+##### Known Limitations
+
+* If your `schema.ts` has relative imports this tool _might not work_. We
+_do_ expose the functions that translate a schema to TypeScript `writeTsFromSchema(fullPath: string, schema: SchemaStrict)` and its
+companion `strictify(schema: Schema): SchemaStrict`.
+
+* Will _not_ make new directories
 
 ## API
 
