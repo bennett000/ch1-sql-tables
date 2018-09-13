@@ -249,7 +249,7 @@ export interface SchemaRelation {
 If you've installed `@ch1/sql-tables` in your project you should be able to
 use our CLI tool.  From your project route:
 
-`./node_modules/.bin/sql-tables.js /path/to/input-schema.ts /path/to/output.ts`
+`./node_modules/.bin/sql-tables /path/to/input-schema.ts /path/to/output.ts`
 
 This will generate TypeScript types from `input-schema.ts` and put them in `output.ts`
 
