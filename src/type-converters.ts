@@ -5,9 +5,11 @@ import {
   toInt,
   toIntMin,
   toIntBetween,
+  toString,
+} from '@ch1/utility';
+import {
   toJsBoolean,
   toSqlBoolean,
-  toString,
 } from './util';
 
 /**

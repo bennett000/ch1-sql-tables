@@ -1,7 +1,24 @@
 {
-  "extends": "./tsconfig.base",
+  "buildOnSave": false,
+  "compileOnSave": false,
   "compilerOptions": {
-    "lib": [ "dom", "es6" ],
-    "target": "es6",
-  }
+    "declaration": true,
+    "lib": [ "es6" ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": false,
+    "outDir": "dist/",
+    "removeComments": false,
+    "sourceMap": true,
+    "target": "es2015"
+  },
+  "exclude": [
+    "coverage",
+    "dist",
+    "node_modules",
+    "./index.d.ts",
+    "example"
+  ]
 }

@@ -1,18 +1,10 @@
+export { create } from './main';
+
 export {
-  createCrud,
-  transactionStart as transactionBegin,
-  transactionEnd as transactionCommit,
-  transactionRollBack,
-  compoundInsertOrSelectIfExists,
-  queryStream,
-  insertOrSelectIfExistsObservable,
-  insert,
-  update,
-  deleteFrom as deleteStream,
-  selectWhereStream,
-  selectStream as selectFrom,
-  TableRow,
-} from './table';
+  SqlConfig,
+  SqlCrud,
+  SqlDb,
+} from './interfaces';
 
 export {
   mutateStructIntoSchemaStructs,
@@ -24,10 +16,4 @@ export {
   validateAndFixDatabase,
 } from './schema/schema';
 
-export { deepFreeze, error, log, toGtZeroIntMax, toStringMax } from './util';
-
 export { writeTsFromSchema } from './schema/schema-to-typescript';
-
-export { Observable } from 'rxjs/Observable';
-export { Observer } from 'rxjs/Observer';
-export { Subscription } from 'rxjs/Subscription';

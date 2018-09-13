@@ -1,5 +1,3 @@
-import { Observable } from 'rxjs';
-import 'rxjs/operator/concat';
 import {
   NotInCode,
   NotInDb,
@@ -24,8 +22,8 @@ import {
   objReduce,
   partial,
   pluck,
-} from '../../util';
-import { QueryStream } from '../../table';
+} from '@ch1/utility';
+import { QueryFn } from '../../interfaces';
 import { createColumnName, typeCheckColumn } from './checkers-types';
 
 const tableName = 'table_name';
@@ -33,21 +31,26 @@ const mapTableName: (arg: any) => string = <any>partial(pluck, tableName);
 const hasTableName: (arg: any) => boolean = <any>partial(hasProp, tableName);
 
 export function listTableNames(
-  query: QueryStream<InfoSchemaTable>
-): Observable<string> {
-  return listTables(query)
-    .filter(hasTableName)
-    .map(mapTableName)
+  dbName: string,
+  query: QueryFn<InfoSchemaTable>
+): Promise<string[]> {
+  return listTables(dbName, query)
+    .then((tables) => {
+      return tables.filter(hasTableName)
+        .map(mapTableName);
+    });
 }
 
 export function fetchTablesAndCheckIfInCode(
-  query: QueryStream<InfoSchemaTable>,
+  dbName: string,
+  query: QueryFn<InfoSchemaTable>,
   schema: SchemaStrict
-): Observable<SchemaValidationContainer[]> {
+): Promise<SchemaValidationContainer[]> {
 
-  return listTableNames(query)
-    .map(createCheckForTableInCode(schema))
-    .toArray();
+  return listTableNames(dbName, query)
+  .then((names: string[]) => {
+    return names.map(createCheckForTableInCode(schema));
+  });
 }
 
 export function findColumnInSchema(
@@ -76,24 +79,25 @@ export function createInfoSchemaToValidationContainer(schema: SchemaStrict) {
         type: 'column',
       },
       name: createColumnName(col.table_name, col.column_name),
-    };
+    } as SchemaValidationContainer;
   };
 }
 
 export function fetchColumnsAndCheckIfInCode(
-  query: QueryStream<InfoSchemaColumn>,
+  dbName: string,
+  query: QueryFn<InfoSchemaColumn>,
   schema: SchemaStrict
-): Observable<SchemaValidationContainer[]> {
-
+): Promise<SchemaValidationContainer[]> {
   const filterByTable =
     (col: InfoSchemaColumn) => findCaseInsensitivePropInObj(
       schema, col.table_name
     ) ? true : false
 
-  return listAllColumns(query)
-    .filter(filterByTable)
-    .map(createInfoSchemaToValidationContainer(schema))
-    .toArray() as any;
+  return listAllColumns(dbName, query)
+    .then((columns) => {
+      return columns.filter(filterByTable)
+        .map(createInfoSchemaToValidationContainer(schema));
+    });
 }
 
 export function createCheckForTableInCode(dict: SchemaStrict) {
@@ -179,24 +183,30 @@ export function flattenSchemaValidationContainers(
 }
 
 export function validateColumns(
-  query: QueryStream<InfoSchemaColumn>,
+  dbName: string,
+  query: QueryFn<InfoSchemaColumn>,
   schema: SchemaStrict,
   svc: SchemaValidationCollection
-): Observable<SchemaValidation[]> {
-  return fetchColumnsAndCheckIfInCode(query, schema)
-    .map(flattenSchemaValidationContainers)
-    .map((innerSvc: SchemaValidationCollection) => checkForColumnInDb(
-        schema, innerSvc.names)
-      .concat(innerSvc.errors)
-      .concat(svc.errors)
-    );
+): Promise<SchemaValidation[]> {
+  return fetchColumnsAndCheckIfInCode(dbName, query, schema)
+    .then((columns) => {
+      const flattened = flattenSchemaValidationContainers(columns)
+
+      return checkForColumnInDb(
+        schema, flattened.names)
+        .concat(flattened.errors)
+        .concat(svc.errors)
+    });
 }
 
-export function validateTables(query: QueryStream<any>, schema: SchemaStrict) {
-  return fetchTablesAndCheckIfInCode(query, schema)
-    .map(flattenSchemaValidationContainers)
-    .map((svc: SchemaValidationCollection) => ({
-      errors: svc.errors.concat(checkForTableInDb(schema, svc.names)),
-      names: svc.names,
-    }));
+export function validateTables(dbName: string, query: QueryFn<any>, schema: SchemaStrict) {
+  return fetchTablesAndCheckIfInCode(dbName, query, schema)
+    .then((tables) => {
+      const flattened = flattenSchemaValidationContainers(tables);
+
+      return ({
+        errors: flattened.errors.concat(checkForTableInDb(schema, flattened.names)),
+        names: flattened.names,
+      });
+    });
 }

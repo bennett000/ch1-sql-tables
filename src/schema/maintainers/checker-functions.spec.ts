@@ -1,6 +1,3 @@
-import { Observable } from 'rxjs/Observable';
-import { Observer } from 'rxjs/Observer';
-import { Dictionary } from '../../util';
 import { isSchemaStructProp } from '../schema-guards';
 import { NotInCode, NotInDb } from '../schema';
 import { InfoSchemaColumn } from '../queries/sql';
@@ -19,27 +16,21 @@ import {
 
 describe('checker functions', () => {
   describe('listTableNames function', () => {
-    it('should return an observable', () => {
-      const tno = listTableNames(() => Observable
-        .create()
-      );
-      expect(typeof (tno.subscribe)).toBe('function');
+    it('should return a promise', () => {
+      const tno = listTableNames('my-db', () => new Promise(resolve => resolve()));
+      expect(tno instanceof Promise).toBe(true);
     });
 
-    it('should filter for truthy table_name\'s', (done) => {
-      const testArr = listTableNames(() => Observable
-        .create((o: Observer<Dictionary<any>>) => {
-          o.next({});
-          o.next({ table_name: 'test' });
-          o.next({});
-          o.complete();
-        })
-      ).toArray();
+    it('should filter for truthy table_name\'s', () => {
+      const testPromise = listTableNames(
+        'my-db', 
+        () => new Promise(resolve => resolve({
+          rows: [
+            {}, { table_name: 'test' }, {},
+          ],
+        } as any)));
 
-      testArr.subscribe((a: string[]) => {
-        expect(a).toEqual(['test']);
-        done();
-      });
+      return expect(testPromise).resolves.toEqual(['test'])
     });
   });
 
@@ -63,8 +54,8 @@ describe('checker functions', () => {
 
   describe('fetchTablesAndCheckIfInCode function', () => {
     it('should return an observable', () => {
-      const o = fetchTablesAndCheckIfInCode(() => Observable.create(), {});
-      expect(typeof o.subscribe).toBe('function');
+      const o = fetchTablesAndCheckIfInCode('my-db', () => new Promise(resolve => resolve()), {});
+      expect(o instanceof Promise).toBe(true);
     });
   });
 
@@ -219,16 +210,18 @@ describe('checker functions', () => {
   describe('fetchColumnsAndCheckIfInCode function', () => {
     it('should return an observable array case insensitively filtered by ' +
       'table_name', (done) => {
-      const queryFunction = (q: string) => Observable
-        .create((obs: Observer<InfoSchemaColumn>) => {
-          obs.next((<any>{
-            table_name: 'some-table',
-            column_name: 'some-column',
-          }));
-          obs.complete();
+        const queryFunction = (q: string) => new Promise<{
+          rows: InfoSchemaColumn[],
+        }>(resolve => {
+          resolve({
+            rows: [{
+              table_name: 'some-table',
+              column_name: 'some-column',
+            }] as InfoSchemaColumn[],
+          });
         });
 
-      const o = fetchColumnsAndCheckIfInCode(queryFunction, {
+      const o = fetchColumnsAndCheckIfInCode('my-db', queryFunction, {
         'SOME-TABLE': {
           struct: {
             'SOME-COLUMN': {
@@ -238,9 +231,9 @@ describe('checker functions', () => {
         },
       });
 
-      o.subscribe(() => {
+      o.then(() => {
         done();
-      });
+      }).catch(done);
     });
   });
 });

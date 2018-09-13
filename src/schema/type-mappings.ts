@@ -1,4 +1,4 @@
-import { arrToObj, Dictionary } from '../util';
+import { arrToObj, Dictionary } from '@ch1/utility';
 import { SchemaConstraint, SchemaType } from './schema';
 
 export interface AbstractMapping {

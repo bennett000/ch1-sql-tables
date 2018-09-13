@@ -1,5 +1,9 @@
-import { Client, Pool, Query, QueryResult } from 'pg';
-import { Observable, Observer } from 'rxjs';
+import { Pool, PoolClient, QueryResult, SqlCrud, TableRow, QueryFn } from './interfaces';
+import {
+  isString,
+  toIntBetweenOptional,
+  identity,
+} from '@ch1/utility';
 import {
   SchemaStrict,
   SchemaStructStrict,
@@ -11,122 +15,25 @@ import {
   isSchemaType,
 } from './schema/schema-guards';
 import { toGeneral,  toSql } from './type-converters';
-import { pool } from './db-connect';
 import {
-  isString,
-  noop,
-  partial,
   sql,
   warn,
-  toIntBetweenOptional,
-  identity,
 } from './util';
 
-export const getClient: () => Observable<Client> =
-  <any>partial(getClientFrom, pool);
-
-export const isValidResult = (result: QueryResult) => (result &&
+export const isValidResult = (result: QueryResult<any>) => (result &&
 Array.isArray(result.rows) &&
 result.rows.length) ? true : false;
 
-export interface QueryObservable {
-  (queryString: string, params?: any[]): Observable<QueryResult>;
-}
-
-export interface QueryStream<T> {
-  (queryString: string, params?: any[]): Observable<T>;
-}
-
-export type QueryFunction<T> = QueryObservable | QueryStream<T>;
-
-export interface TableRow {
-  id: number;
-}
-
-export function getClientFrom(p: () => Pool): Observable<Client> {
-  return Observable.create((obs: Observer<Client>) => {
-    let cleanup: Function = noop;
-
-    p()
-      .connect((err: Error, client: Client, done: Function) => {
-        cleanup = done;
-        if (err) {
-          obs.error(err);
-          return;
-        }
-        obs.next(client);
-        obs.complete();
-      });
-
-    return () => {
-      if (cleanup) { 
-        cleanup();
-      }
-    };
-  });
-}
-
-export function createPgQuery(
-  client: Client, queryString: string, params?: any[]
-): Query & Promise<QueryResult> {
+export function query<RowType>(
+  queryFn: QueryFn<RowType>, queryString: string, params?: any[]
+): Promise<QueryResult<RowType>> {
   if (params) {
     sql(`Run query: ${queryString} with params: ${params}`);
-    return (<any>client).query(queryString, params);
+    return queryFn(queryString, params) as Promise<QueryResult<RowType>>;
   }
 
   sql(`Run query: ${queryString}`);
-  return (<any>client).query(queryString);
-}
-
-/**
- * Internal function to create a query that returns an observable that emits
- * rows one at a time
- */
-export function createQueryStream<T>(
-  client: Client, queryString: string, params?: any[]
-): Observable<T> {
-  return Observable.create((obs: Observer<T>) => {
-    const qObj: Query = createPgQuery(client, queryString, params);
-
-    qObj.on('error', obs.error.bind(obs));
-    qObj.on('row', obs.next.bind(obs));
-    qObj.on('end', obs.complete.bind(obs));
-  });
-}
-
-/**
- * Internal function to create a query that returns its _entire_ result as an
- * observable
- */
-export function createQueryObservable(
-  client: Client, queryString: string, params?: any[]
-): Observable<QueryResult> {
-  return Observable.create((obs: Observer<QueryResult>) => {
-    const qp: Promise<QueryResult> = createPgQuery(client, queryString, params);
-
-    qp.then((result: QueryResult) => {
-      obs.next(result);
-      obs.complete();
-    }, obs.error.bind(obs));
-  });
-}
-
-export function queryStream<T>(
-  queryString: string, params?: any[]
-): Observable<T> {
-  return getClient()
-    .flatMap((client: Client) => createQueryStream(
-      client, queryString, params
-    ));
-}
-
-export function query(
-  queryString: string, params?: any[]
-): Observable<QueryResult>  {
-  return getClient()
-    .flatMap((client: Client) => createQueryObservable(
-      client, queryString, params
-    ));
+  return queryFn(queryString) as Promise<QueryResult<RowType>>;
 }
 
 export function getStruct(
@@ -244,15 +151,12 @@ export function selectWhereValidator(
   return tableSchema;
 }
 
-/**
- * returns an observable that streams result rows
- */
-export function selectWhereStream<T>(
-  schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
-): Observable<T> {
+export function selectWhere<RowType>(
+  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
+): Promise<RowType[]> {
   const tableSchema = selectWhereValidator(schema, tableName, cols, vals);
   if (tableSchema instanceof Error) {
-    return Observable.throw(tableSchema);
+    return Promise.reject(tableSchema);
   }
 
   const validColVals =
@@ -260,34 +164,15 @@ export function selectWhereStream<T>(
 
   const q = createSelectWhereQuery(tableName, validColVals.cols);
 
-  return queryStream(q, validColVals.vals);
+  return query<RowType>(queryFn, q, validColVals.vals).then(pluckRows);
 }
 
-export function selectStream<T>(
-  schema: SchemaStrict, tableName: string, cols: string[] = []
-): Observable<T> {
+export function select<RowType>(
+  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[] = []
+): Promise<RowType[]> {
   const q = createSelectAllQuery(tableName, cols);
 
-  return queryStream(q);
-}
-
-/**
- * returns an observable with the _entire_ result
- */
-export function selectWhereObservable(
-  schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
-): Observable<QueryResult> {
-  const tableSchema = selectWhereValidator(schema, tableName, cols, vals);
-  if (tableSchema instanceof Error) {
-    return Observable.throw(tableSchema);
-  }
-
-  const validColVals =
-    validatePropValsForInput(tableSchema, cols, vals);
-
-  const q = createSelectWhereQuery(tableName, validColVals.cols);
-
-  return query(q, validColVals.vals);
+  return query<RowType>(queryFn, q).then(pluckRows);
 }
 
 function colsAndValsFromColsOrObject<T>(
@@ -300,9 +185,8 @@ function colsAndValsFromColsOrObject<T>(
     cols = colsOrObject;
     if (cols.length !== vals.length) {
       if (vals.length === 0 || (cols.length % vals.length !== 0)) {
-        return Observable
-          .throw(new Error('columns and values length must be the same or ' +
-            'vals must be a multiple of cols'));
+        return new Error('columns and values length must be the same or ' +
+            'vals must be a multiple of cols');
       }
     }
   } else {
@@ -317,21 +201,22 @@ function colsAndValsFromColsOrObject<T>(
 }
 
 export function insert<T>(
+  queryFn: QueryFn<any>,
   schema: SchemaStrict, 
   tableName: string, 
   colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
   vals: any[] = [],
-): Observable<QueryResult> {
+): Promise<QueryResult<any>> {
   const cnv = colsAndValsFromColsOrObject(colsOrObject, vals);
 
-  if (cnv instanceof Observable) {
-    return cnv;
+  if (cnv instanceof Error) {
+    return Promise.reject(cnv);
   }
 
   const struct = getStruct(schema, tableName);
 
   if (!struct) {
-    return Observable.throw(new Error(`insert: table not found ${tableName}`));
+    throw new Error(`insert: table not found ${tableName}`);
   }
 
   const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
@@ -342,26 +227,26 @@ export function insert<T>(
 
   sql('Attempting query', q);
 
-  return query(q, validColVals.vals);
+  return query(queryFn, q, validColVals.vals);
 }
 
 export function update<T>(
+  queryFn: QueryFn<any>,
   schema: SchemaStrict, 
   tableName: string, 
   idProps: string[],
-  idValues: Array<number | string>,
   colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
   vals: any[] = [],
-): Observable<QueryResult> {
+): Promise<QueryResult<any>> {
   const cnv = colsAndValsFromColsOrObject(colsOrObject, vals);
 
-  if (cnv instanceof Observable) {
-    return cnv;
+  if (cnv instanceof Error) {
+    return Promise.reject(cnv);
   }
 
   const struct = getStruct(schema, tableName);
   if (!struct) {
-    return Observable.throw(new Error(`insert: table not found ${tableName}`));
+    return Promise.reject(new Error(`insert: table not found ${tableName}`));
   }
 
   const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
@@ -372,25 +257,26 @@ export function update<T>(
 
   sql('Attempting query', q);
 
-  return query(q, validColVals.vals);
+  return query(queryFn, q, validColVals.vals);
 }
 
 export function deleteFrom(
+  queryFn: QueryFn<any>,
   schema: SchemaStrict, 
   tableName: string, 
   idProps: string[],
   idValues: Array<number | string>,
-): Observable<QueryResult> {
+): Promise<QueryResult<any>> {
   const struct = getStruct(schema, tableName);
   if (!struct) {
-    return Observable.throw(new Error(`insert: table not found ${tableName}`));
+    return Promise.reject(new Error(`insert: table not found ${tableName}`));
   }
 
   const q = createDeleteQuery(tableName, idProps);
 
   sql('Attempting query', q);
 
-  return query(q, idValues);
+  return query(queryFn, q, idValues);
 }
 
 export function reduceByKeys(keys: number[]) {
@@ -427,53 +313,53 @@ export function createReduceCompoundInsertOrSelectResults(depCols: string[]) {
   };
 }
 
-export function compoundInsertOrSelectIfExists(
-  schema: SchemaStrict, tableName: string, cols: string[], vals: any[],
-  depObservables: Observable<TableRow[]>[],
-  depCols: string[],
-  ...keyIndexes: number[]
-) {
-  return Observable
-    .zip(
-      ...depObservables,
-      (...deps: any[]) => deps
-    )
-    .map(createReduceCompoundInsertOrSelectResults(depCols))
-    .flatMap((results) => insertOrSelectIfExistsObservable(
-      schema,
-      tableName,
-      [...cols, ...depCols],
-      [...vals, ...results],
-      ...keyIndexes
-    ));
-}
+// export function compoundInsertOrSelectIfExists(
+//   schema: SchemaStrict, tableName: string, cols: string[], vals: any[],
+//   depObservables: Observable<TableRow[]>[],
+//   depCols: string[],
+//   ...keyIndexes: number[]
+// ) {
+//   return Observable
+//     .zip(
+//       ...depObservables,
+//       (...deps: any[]) => deps
+//     )
+//     .map(createReduceCompoundInsertOrSelectResults(depCols))
+//     .flatMap((results) => insertOrSelectIfExistsObservable(
+//       schema,
+//       tableName,
+//       [...cols, ...depCols],
+//       [...vals, ...results],
+//       ...keyIndexes
+//     ));
+// }
 
-export function insertOrSelectIfExistsObservable<T extends TableRow>(
-  schema: SchemaStrict,
-  tableName: string,
-  cols: string[],
-  vals: any[],
-  ...keyIndexes: number[]
-): Observable<T[]> {
-  const reducedCols = cols.reduce(reduceByKeys(keyIndexes), []);
-  const reducedVals = vals.reduce(reduceByKeys(keyIndexes), []);
+// export function insertOrSelectIfExistsObservable<T extends TableRow>(
+//   schema: SchemaStrict,
+//   tableName: string,
+//   cols: string[],
+//   vals: any[],
+//   ...keyIndexes: number[]
+// ): Observable<T[]> {
+//   const reducedCols = cols.reduce(reduceByKeys(keyIndexes), []);
+//   const reducedVals = vals.reduce(reduceByKeys(keyIndexes), []);
 
-  const swo = selectWhereObservable(
-    schema,
-    tableName,
-    reducedCols,
-    reducedVals
-  );
+//   const swo = selectWhereObservable(
+//     schema,
+//     tableName,
+//     reducedCols,
+//     reducedVals
+//   );
 
-  return swo.flatMap((result1: QueryResult) => isValidResult(result1) ?
-    Observable.of(result1.rows) :
-    insert(schema, tableName, cols, vals)
-      .flatMap(() => swo
-        .flatMap((result2: QueryResult) => isValidResult(result2) ?
-          Observable.of(result2.rows) :
-          Observable.throw(new Error('insertOrSelectWhere: unknown fail'))))
-  );
-}
+//   return swo.flatMap((result1: QueryResult<any>) => isValidResult(result1) ?
+//     Observable.of(result1.rows) :
+//     insert(schema, tableName, cols, vals)
+//       .flatMap(() => swo
+//         .flatMap((result2: QueryResult<any>) => isValidResult(result2) ?
+//           Observable.of(result2.rows) :
+//           Observable.throw(new Error('insertOrSelectWhere: unknown fail'))))
+//   );
+// }
 
 function makeParamReducer(chunkSize?: number) {
   return (vstr: string, v: string, i: number, arr: string[]) => {
@@ -496,55 +382,74 @@ function makeParamReducer(chunkSize?: number) {
 }
 
 export function transactionStart(
+  pool: Pool,
   isolationLevel?: string
-): Observable<QueryResult> {
-  if (isolationLevel) {
-    return query(`BEGIN TRANSACTION ISOLATION LEVEL ${isolationLevel};`);
-  }
-  return query('BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;');
+): Promise<PoolClient> {
+  return pool.connect()
+    .then((client: PoolClient) => {
+      if (isolationLevel) {
+        return query(client.query.bind(client), `BEGIN TRANSACTION ISOLATION LEVEL ${isolationLevel};`)
+          .then(() => client);
+      }
+      return query(client.query.bind(client), 'BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;')
+        .then(() => client);
+    });
 }
 
-export function transactionEnd(): Observable<QueryResult> {
-  return query('END TRANSACTION;');
+export function transactionEnd(client: PoolClient): Promise<QueryResult<any>> {
+  return query(client.query.bind(client), 'END TRANSACTION;');
 }
 
-export function transactionRollBack(err?: Error): Observable<QueryResult> {
+export function transactionRollBack(client: PoolClient, err?: Error): Promise<QueryResult<any>> {
   sql('Transaction Rollback', err ?
     err.message + '\nStack Trace: ' + err.stack :
     undefined);
-  return query('ROLLBACK;');
+  return query(client.query.bind(client), 'ROLLBACK;');
 }
 
-export type SqlCrud<T> = {
-  [P in keyof T]: {
-    // insert(thing: T[P]): Observable<QueryResult>;
-    insert(thing: { [P1 in keyof T[P]]?: T[P][P1] }): Observable<QueryResult>;
-    update(
-      idProps: string[], 
-      idVals: Array<number | string>, 
-      obj: { [P1 in keyof T[P]]?: T[P][P1] }
-    ): Observable<QueryResult>;
-    delete(
-      idProps: string[], idVals: Array<number | string>
-    ): Observable<QueryResult>;
-    select(): Observable<T[P]>;
-    selectWhere(
-      idProps: string[], idVals: Array<number | string>
-    ): Observable<T[P]>;
-  };
-};
-
-export function createCrud<T>(schema: SchemaStrict): SqlCrud<T> {
+export function createCrud<T>(
+  queryFn: QueryFn<any>,
+  schema: SchemaStrict
+): SqlCrud<T> {
   return Object.keys(schema).reduce((
     crud: SqlCrud<T>, el: string
   ) => {
     (crud as any)[el] = {
-      insert: insert.bind(null, schema, el),
-      update: update.bind(null, schema, el),
-      delete: deleteFrom.bind(null, schema, el),
-      select: selectStream.bind(null, schema, el),
-      selectWhere: selectWhereStream.bind(null, schema, el),
+      insert: insert.bind(null, queryFn, schema, el),
+      update: update.bind(null, queryFn, schema, el),
+      delete: deleteFrom.bind(null, queryFn, schema, el),
+      select: select.bind(null, queryFn, schema, el),
+      selectWhere: selectWhere.bind(null, queryFn, schema, el),
+    transactionDelete: (
+      client: PoolClient,
+      idProps: string[], 
+      idValues: Array<number | string>
+    ) => deleteFrom(client.query.bind(client), schema, el, idProps, idValues),
+    transactionInsert: <T>(
+      client: PoolClient,
+      colsOrObject: string[] | { [P in keyof T]?: T[P] },
+      vals?: any[],
+    ) => insert<T>(client.query.bind(client), schema, el, colsOrObject, vals),
+    transactionUpdate: <T>(
+      client: PoolClient,
+      idProps: string[],
+      colsOrObject: string[] | { [P in keyof T]?: T[P] },
+      vals: any[],
+    ) => update<T>(client.query.bind(client), schema, el, idProps, colsOrObject, vals),
+    transactionSelect: <RowType>(
+      client: PoolClient,
+      el: string,
+      cols?: string[],
+    ) => select<RowType>(client.query.bind(client), schema, el, cols),
+    transactionSelectWhere: <RowType>(
+      client: PoolClient,
+      el: string, cols: string[], vals: any[]
+    ) => selectWhere<RowType>(client.query.bind(client), schema, el, cols, vals),
     };
     return crud;
   }, {} as SqlCrud<T>);
+}
+
+export function pluckRows<T>(result: QueryResult<T>) {
+  return result.rows;
 }

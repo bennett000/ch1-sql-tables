@@ -1,4 +1,4 @@
-import { Dictionary, isObject } from '../util';
+import { Dictionary, isObject } from '@ch1/utility';
 import {
   SchemaNonNumeric,
   SchemaNumeric,

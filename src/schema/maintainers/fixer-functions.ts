@@ -1,4 +1,8 @@
-import { Observable } from 'rxjs/Observable';
+import {
+  Dictionary,
+  partial,
+  objReduce,
+} from '@ch1/utility';
 import {
   Schema,
   SchemaItem,
@@ -20,7 +24,7 @@ import {
   isSchemaStructStrict,
   isSchemaType,
 } from '../schema-guards';
-import { QueryStream } from '../../table';
+import { QueryFn, QueryResult } from '../../interfaces';
 import {
   addColumn,
   createTable,
@@ -42,25 +46,22 @@ import {
 } from '../type-mappings';
 import {
   augmentObjIfNew,
-  Dictionary,
   log,
-  partial,
-  objReduce,
 } from '../../util';
 
 const MAX_VAR_CHAR = 255;
 
 export function createColumn(
-  query: QueryStream<any>, table: string, column: string, prop: SchemaStructProp
-) {
+  query: QueryFn<any>, table: string, column: string, prop: SchemaStructProp
+): Promise<QueryResult<any>> {
   const columnString = createColumnFromProp(column, prop);
 
   return query(`${addColumn(table)} ${columnString}`);
 }
 
 export function setColumnNullConstraint(
-  query: QueryStream<any>, table: string, column: string, prop: SchemaStructProp
-) {
+  query: QueryFn<any>, table: string, column: string, prop: SchemaStructProp
+): Promise<QueryResult<any>> {
   if (hasConstraint('NotNull', prop)) {
     return query(setNotNull(table, column));
   }
@@ -111,8 +112,8 @@ export function createColumnFromProp(name: string, prop: SchemaStructProp) {
 }
 
 export function createTableFromStruct(
-  query: QueryStream<any>, name: string, s: SchemaPropStrict
-): Observable<any> {
+  query: QueryFn<any>, name: string, s: SchemaPropStrict
+): Promise<any> {
   return createTable(query, name, objReduce(
     s.struct,
     (state: string[], el: SchemaStructProp, name: string) => {
@@ -307,7 +308,7 @@ export function strictifySchemaStruct(
   return objReduce(
     struct,
     (s: SchemaStructStrict, e, i) => {
-      s[i] = strictifySchemaStructItem(e);
+      s[i] = strictifySchemaStructItem(e as any);
       return s;
     },
     {}

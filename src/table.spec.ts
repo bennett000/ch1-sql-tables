@@ -1,17 +1,10 @@
 import {
-  Client,
-} from 'pg';
-import { Dictionary } from './util';
-import {
   createInsertQuery,
-  createPgQuery,
-  createQueryObservable,
-  createQueryStream,
   createReduceCompoundInsertOrSelectResults,
-  getClientFrom,
   hasQueryError,
   isValidResult,
   reduceByKeys,
+  query,
   validatePropValsForInput,
 } from './table';
 
@@ -28,14 +21,14 @@ describe('table specs', () => {
     });
   });
 
-  describe('createPgQuery function', () => {
+  describe('query function', () => {
     it('should call the query with params if given params', (done) => {
       const params = ['hello', 'world'];
       const qf = (q: string, p: any[]) => {
         expect(p).toEqual(params);
         done();
       };
-      expect(createPgQuery(<Client>{ query: qf }, 'hello', params));
+      expect(query(qf as any, 'hello', params));
     });
 
     it('should call the query without params if not given params', (done) => {
@@ -43,103 +36,10 @@ describe('table specs', () => {
         expect(p).toEqual(undefined);
         done();
       };
-      expect(createPgQuery(<Client>{ query: qf }, 'hello'));
+      expect(query(qf as any, 'hello'));
     });
   });
 
-  describe('createQueryStream function', () => {
-    let client: Client;
-    let callbacks: Dictionary<Function[]> = {};
-    const emit = (
-      event: string, value: any
-    ) => callbacks[event].forEach(cb => cb(value));
-
-    beforeEach(() => {
-      callbacks = {};
-      client = <Client>(<any>{
-        query: () => ({
-          on: (event: string, handler: Function) => {
-            if (!callbacks[event]) {
-              callbacks[event] = [];
-            }
-            callbacks[event].push(handler);
-          },
-        }),
-      });
-    });
-
-    it('should return a rejecting observable if an error event is raised',
-      (done) => {
-        createQueryStream(client, 'hello', [])
-          .subscribe(
-            () => expect('this case').toEqual(undefined),
-            (err: Error) => {
-              expect(err instanceof Error).toEqual(true);
-              done();
-            },
-            done,
-          );
-        emit('error', new Error('test passing'));
-      });
-
-    it('should return an observable that emits as expected',
-      (done) => {
-        const expectedRow = { test: 'thing' };
-        createQueryStream(client, 'hello', [])
-          .subscribe(
-            (row: any) => expect(row).toEqual(expectedRow),
-            (err: Error) => {
-              expect(err).toEqual(undefined);
-              done();
-            },
-            done,
-          );
-        emit('row', expectedRow);
-        // this call validates the complete state
-        emit('end', true);
-      });
-  });
-
-  describe('createQueryObservable function', () => {
-    let client: Client;
-    let resolve: Function;
-    let reject: Function;
-
-    beforeEach(() => {
-      client = <Client>(<any>{
-        query: () => (new Promise((p, f) => { resolve = p; reject = f; })),
-      });
-    });
-
-    it('should return a rejecting observable if client\'s query rejects',
-      (done) => {
-        createQueryObservable(client, 'hello', [])
-          .subscribe(
-            () => expect('this case should not happen').toEqual(undefined),
-            (err: Error) => {
-              expect(err instanceof Error).toEqual(true);
-              done();
-            },
-            done,
-          );
-        reject(new Error('fail case'));
-      });
-
-    it('should trigger an observable if client\'s query resolves',
-      (done) => {
-        const expectedThing = { test: 'hello' };
-        createQueryObservable(client, 'hello', [])
-          .subscribe(
-            (thing: any) => expect(thing).toEqual(expectedThing),
-            (err: Error) => {
-              expect(err).toEqual(undefined);
-              done();
-            },
-            done,
-          );
-        resolve(expectedThing);
-      });
-  });
 
   describe('createReduceCompoundInsertOrSelectResults function', () => {
     it('should throw if there are any errors', () => {
@@ -154,46 +54,6 @@ describe('table specs', () => {
           [[{id: 1}], [{id: 2}]]
         )
       ).toEqual([1, 2]);
-    });
-  });
-
-  describe('getClientFrom function', () => {
-    let pool: () => any;
-    let poolCallback: Function;
-
-    beforeEach(() => {
-      pool = () => ({
-        connect: (
-          callback: (err: Error|null, client: Client, done: Function) => any
-        ) => {
-          poolCallback = callback;
-        },
-      });
-    });
-
-    it('should error if the callback gets an error', (done) => {
-      getClientFrom(pool)
-        .subscribe(() => {
-            expect('this case should not happen').toEqual(undefined);
-          },
-          (err) => {
-            expect(err instanceof Error).toEqual(true);
-            done();
-          }, done);
-      poolCallback(new Error('test passed!'));
-    });
-
-    it('should emit a client if everything is good', (done) => {
-      const expectedThing = { type: 'client technically' };
-      getClientFrom(pool)
-        .subscribe((thing: any) => {
-            expect(thing).toEqual(expectedThing);
-          },
-          (err) => {
-            expect('this case should not happen').toEqual(undefined);
-            done();
-          }, done);
-      poolCallback(null, expectedThing);
     });
   });
 

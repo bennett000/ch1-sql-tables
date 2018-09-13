@@ -1,5 +1,3 @@
-import { Observable } from 'rxjs';
-import 'rxjs/operator/concat';
 import {
   SchemaPropStrict,
   SchemaStrict,
@@ -15,20 +13,21 @@ import {
   setColumnNullConstraint,
   StructContainer,
 } from './fixer-functions';
-import { QueryStream } from '../../table';
-import { findCaseInsensitivePropInObj, log, objReduce } from '../../util';
+import { QueryResult, QueryFn } from '../../interfaces';
+import { log } from '../../util';
+import { findCaseInsensitivePropInObj, objReduce } from '@ch1/utility';
 
 export { mutateStructIntoSchemaStructs } from './fixer-functions';
 
 export function validateDatabase(
-  query: QueryStream<any>,
+  dbName: string,
+  query: QueryFn<any>,
   schema: SchemaStrict,
-): Observable<SchemaValidation[]> {
-  return validateTables(query, schema)
-    .flatMap(
-      (svc: SchemaValidationCollection) =>
-        validateColumns(query, filterSchemaByTableValidations(schema, svc), svc)
-    );
+): Promise<SchemaValidation[]> {
+  return validateTables(dbName, query, schema)
+    .then((svc: SchemaValidationCollection) => {
+      return validateColumns(dbName, query, filterSchemaByTableValidations(schema, svc), svc);
+    });
 }
 
 export function filterSchemaByTableValidations(
@@ -47,7 +46,7 @@ export function filterSchemaByTableValidations(
 }
 
 export interface ValidationFixContainer {
-  fixes: Observable<any>[];
+  fixes: (() => Promise<any>)[];
   validations: SchemaValidation[];
 }
 
@@ -70,17 +69,17 @@ export interface FixControls {
 }
 
 export type createValidationMapper = (
-  query: QueryStream<any>, schema: SchemaStrict
-) => (arg: SchemaValidation) => Observable<any>;
+  query: QueryFn<any>, schema: SchemaStrict
+) => (arg: SchemaValidation) => () => Promise<any>;
 
 export function generateFixes(
-  query: QueryStream<any>,
+  query: QueryFn<any>,
   schema: SchemaStrict,
   validations: SchemaValidation[],
   filterValidations: (arg: any) => Boolean,
   createValidationMapper: createValidationMapper,
 ): ValidationFixContainer {
-  const fixes: Observable<any>[] = validations
+  const fixes: (() => Promise<any>)[] = validations
     .filter(filterValidations)
     .map(createValidationMapper(query, schema));
 
@@ -93,8 +92,8 @@ export function generateFixes(
   };
 }
 
-export function nullFixMapper(query: QueryStream<any>, schema: SchemaStrict) {
-  return  (sv: SchemaValidation) => {
+export function nullFixMapper(query: QueryFn<any>, schema: SchemaStrict) {
+  return  (sv: SchemaValidation): () => Promise<QueryResult<any>> => {
     const [table, column] = sv.name.split('.');
     /**
      * This is a touch optimistic, but given validations are produced from the
@@ -105,12 +104,12 @@ export function nullFixMapper(query: QueryStream<any>, schema: SchemaStrict) {
     const prop: SchemaStructProp =
       (<any>findCaseInsensitivePropInObj(scProp.struct, column));
 
-    return setColumnNullConstraint(query, table, column, prop);
+    return () => setColumnNullConstraint(query, table, column, prop);
   };
 }
 
-export function columnAddMapper(query: QueryStream<any>, schema: SchemaStrict) {
-  return (sv: SchemaValidation) => {
+export function columnAddMapper(query: QueryFn<any>, schema: SchemaStrict) {
+  return (sv: SchemaValidation): () => Promise<QueryResult<any>> => {
     const [table, column] = sv.name.split('.');
     /**
      * This is a touch optimistic, but given validations are produced from the
@@ -122,7 +121,7 @@ export function columnAddMapper(query: QueryStream<any>, schema: SchemaStrict) {
       const prop: SchemaStructProp =
         (<any>findCaseInsensitivePropInObj(scProp.struct, column));
 
-      return createColumn(query, table, column, prop);
+      return () => createColumn(query, table, column, prop);
     } catch (err) {
       log(`columnAddMapper: Known possible error path: ${sv.name}`, sv);
       throw err;
@@ -153,7 +152,7 @@ export function createNotNullFilter(fixControls: FixControls) {
 }
 
 export function addNotNull(
-  query: QueryStream<any>,
+  query: QueryFn<any>,
   schema: SchemaStrict,
   validations: SchemaValidation[],
   fixControls: FixControls,
@@ -163,7 +162,7 @@ export function addNotNull(
 }
 
 export function addColumns(
-  query: QueryStream<any>, schema: SchemaStrict, validations: SchemaValidation[]
+  query: QueryFn<any>, schema: SchemaStrict, validations: SchemaValidation[]
 ): ValidationFixContainer {
   return generateFixes(query, schema, validations, (m) => m
     .type === 'column' && m.reason === 'not in db', columnAddMapper);
@@ -177,7 +176,7 @@ export const mapValidationTableNotInDb = (sv: SchemaValidation) => sv
  * constraints, in theory though we'll need sort constraints on columns :/
  */
 export function addTables(
-  query: QueryStream<any>, schema: SchemaStrict, validations: SchemaValidation[]
+  query: QueryFn<any>, schema: SchemaStrict, validations: SchemaValidation[]
 ): ValidationFixContainer {
   const tables: string[] = validations
     .map(mapValidationTableNotInDb)
@@ -203,7 +202,7 @@ export function addTables(
 
   return {
     fixes: orderedSchemaFixes
-      .map((osf: StructContainer) => createTableFromStruct(
+      .map((osf: StructContainer) => () => createTableFromStruct(
         query, osf.name, osf.scProp)
       ),
     validations: columns,
@@ -211,7 +210,7 @@ export function addTables(
 }
 
 export function fixValidations(
-  query: QueryStream<any>,
+  query: QueryFn<any>,
   schema: SchemaStrict,
   fixControls: FixControls,
 ): (validations: SchemaValidation[]) => ValidationFixContainer {
@@ -240,21 +239,24 @@ export function fixValidations(
 }
 
 export function validateAndFixDatabase(
-  query: QueryStream<any>,
+  dbName: string,
+  query: QueryFn<any>,
   schema: SchemaStrict,
   fixControls: FixControls = {
     additive: true,
     codeToDbNotNull: true,
     codeToDbNull: false,
-  }
-): Observable<SchemaValidation[]> {
-  return validateDatabase(query, schema)
-    .map(fixValidations(query, schema, fixControls))
-    .flatMap((vfc: ValidationFixContainer) => {
-      return Observable
-        .concat(...vfc.fixes)
-        .toArray()
-        .map(() => vfc.validations)
+  },
+): Promise<SchemaValidation[]> {
+  return validateDatabase(dbName, query, schema)
+    .then((results) => {
+      const vfc = fixValidations(query, schema, fixControls)(results);
+      return vfc.fixes
+        // run the promises in series, they're ordered!
+        .reduce(
+          (p, fix) => p.then((results) => fix().then((newResult) => results.concat(newResult))), 
+          Promise.resolve([]),
+        );
     });
 }
 
