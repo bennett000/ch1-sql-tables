@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.1.1
+
+- strictify the schema in the CLI tool
+
 ## 1.1.0
 
 - generate typescript "binary"
