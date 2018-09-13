@@ -397,14 +397,30 @@ export function transactionStart(
 }
 
 export function transactionEnd(client: PoolClient): Promise<QueryResult<any>> {
-  return query(client.query.bind(client), 'END TRANSACTION;');
+  return query(client.query.bind(client), 'END TRANSACTION;')
+    .then((result) => {
+      client.release();
+      return result;
+    })
+    .catch((err: Error) => {
+      client.release();
+      throw err;
+    });
 }
 
 export function transactionRollBack(client: PoolClient, err?: Error): Promise<QueryResult<any>> {
   sql('Transaction Rollback', err ?
     err.message + '\nStack Trace: ' + err.stack :
     undefined);
-  return query(client.query.bind(client), 'ROLLBACK;');
+
+  return query(client.query.bind(client), 'ROLLBACK;')
+    .then((result) => {
+      client.release();
+      return result;
+    }).catch((err: Error) => {
+      client.release();
+      throw err;
+    });
 }
 
 export function createCrud<T>(
