@@ -6,7 +6,14 @@ import { SqlDb } from '@ch1/sql-tables';
 export const schemaName = 'sql-tables-example';
 
 export function create() {
-  return createSql({
+  return createSql<{
+    users: {
+      id: string, nameFirst: string, nameLast: string, age: string
+    },
+    posts: {
+      id: string, userId: string, post: string
+    },
+  }>({
     user: schemaName,
     database: schemaName,
     password: 'this-is-dev',
@@ -16,7 +23,7 @@ export function create() {
 }
 
 export function createSelectUsers(sql: SqlDb<any>) {
-  return sql.pool().query('SELECT * FROM Users');
+  return sql.tables.Users.select();
 }
 
 export function createInsertRandomUser(sql: SqlDb<any>) {

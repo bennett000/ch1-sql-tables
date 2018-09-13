@@ -97,7 +97,9 @@ export type SqlCrud<Tables> = {
     delete(
       idProps: string[], idVals: Array<number | string>
     ): Promise<QueryResult<any>>;
-    select(): Promise<Tables[Table][]>;
+    select(
+      cols?: string[],
+    ): Promise<Tables[Table][]>;
     selectWhere(
       idProps: string[], idVals: Array<number | string>
     ): Promise<Tables[Table][]>;
