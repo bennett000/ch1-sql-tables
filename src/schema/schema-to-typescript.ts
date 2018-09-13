@@ -27,9 +27,19 @@ export function schemaToTypeScript(schema: SchemaStrict): string {
     return objReduce(schema, scPropToInterface, '');
 }
 
+export function dbInterfaceFromSchema(schema: SchemaStrict) {
+  return objReduce(schema, (state: string, prop, name: string) => {
+    state += `  ${name}: ${name};\n`;
+    return state;
+  }, 'export interface DbSchema {\n') + '}';
+}
+
 export function writeTsFromSchema(fullPath: string, schema: SchemaStrict) {
+  const tableInterfaces = schemaToTypeScript(schema);
+  const dbInterface = dbInterfaceFromSchema(schema);
+  const interfaces = tableInterfaces + dbInterface;
   return new Promise((resolve, reject) => {
-    writeFile(fullPath, schemaToTypeScript(schema), (err: Error|null) => {
+    writeFile(fullPath, interfaces, (err: Error|null) => {
       if (err) {
         reject(err);
       } else {
