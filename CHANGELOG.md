@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.8
+
+- typegen only forces lowercase on props, excluding the collection interface
+
 ## 1.2.7
 
 - typegen interfaces are now cased according to schema, but sql props
