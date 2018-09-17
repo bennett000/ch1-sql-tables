@@ -1,6 +1,8 @@
 export { create } from './main';
 
 export {
+  Pool,
+  PoolClient,
   SqlConfig,
   SqlCrud,
   SqlDb,

@@ -1,6 +1,6 @@
 {
   "name": "@ch1/sql-tables",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Thin data access layer and schema generator for Postgres (and potentially other SQLs) that leverages RxJS streams and can generate TypeScript type defintions",
   "bin": "./sql-tables.js",
   "main": "index.js",
