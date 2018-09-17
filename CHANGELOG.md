@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.3
+
+- Fix error in update typings
+
 ## 1.2.2
 
 - Adds @types/pg as a full on dependency so TS consumers get the types
