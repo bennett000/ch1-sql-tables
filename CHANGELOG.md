@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.2
+
+- Adds @types/pg as a full on dependency so TS consumers get the types
+
 ## 1.2.1
 
 - Expose public types sql-tables depends on from `pg` library
