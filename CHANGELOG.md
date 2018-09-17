@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.4
+
+- Update function actually isolates the idProps
+
 ## 1.2.3
 
 - Fix error in update typings
