@@ -10,14 +10,14 @@ import { typeMappingsByGeneric } from './type-mappings';
 export function schemaStructPropToTypeScript(
   state: string, prop: SchemaStructProp, name: string,
 ): string {
-  return state + `  ${name}: ${typeMappingsByGeneric[prop.type].ts};
+  return state + `  ${name.toLowerCase()}: ${typeMappingsByGeneric[prop.type].ts};
 `;
 }
 
 export function scPropToInterface(
   state: string, scProp: SchemaPropStrict, name: string
 ): string {
-  return state + `export interface ${name} {
+  return state + `export interface ${name.toLowerCase()} {
 ${objReduce(scProp.struct, schemaStructPropToTypeScript, '')}}
 
 `;
@@ -29,7 +29,7 @@ export function schemaToTypeScript(schema: SchemaStrict): string {
 
 export function dbInterfaceFromSchema(schema: SchemaStrict) {
   return objReduce(schema, (state: string, prop, name: string) => {
-    state += `  ${name}: ${name};\n`;
+    state += `  ${name.toLowerCase()}: ${name.toLowerCase()};\n`;
     return state;
   }, 'export interface DbSchema {\n') + '}';
 }
