@@ -1,5 +1,10 @@
 # CHANGE LOG
 
+## 1.2.7
+
+- typegen interfaces are now cased according to schema, but sql props
+remain lowercase, better usability
+
 ## 1.2.6
 
 - typegen schema name output is now all lowercase

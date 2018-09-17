@@ -17,7 +17,7 @@ export function schemaStructPropToTypeScript(
 export function scPropToInterface(
   state: string, scProp: SchemaPropStrict, name: string
 ): string {
-  return state + `export interface ${name.toLowerCase()} {
+  return state + `export interface ${name} {
 ${objReduce(scProp.struct, schemaStructPropToTypeScript, '')}}
 
 `;
@@ -29,7 +29,7 @@ export function schemaToTypeScript(schema: SchemaStrict): string {
 
 export function dbInterfaceFromSchema(schema: SchemaStrict) {
   return objReduce(schema, (state: string, prop, name: string) => {
-    state += `  ${name.toLowerCase()}: ${name.toLowerCase()};\n`;
+    state += `  ${name.toLowerCase()}: ${name};\n`;
     return state;
   }, 'export interface DbSchema {\n') + '}';
 }
