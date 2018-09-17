@@ -63,7 +63,7 @@ export interface SqlDb<Tables> {
     tableName: string,
     idProps: string[],
     colsOrObject: string[] | { [P in keyof T]?: T[P] },
-    vals: any[],
+    vals?: any[],
   ): Promise<any>;
   transactionRollBack(client: PoolClient): Promise<any>;
   transactionSelect<RowType>(
@@ -91,8 +91,8 @@ export type SqlCrud<Tables> = {
     insert(thing: { [Prop in keyof Tables[Table]]?: Tables[Table][Prop] }): Promise<QueryResult<any>>;
     update(
       idProps: string[], 
-      idVals: Array<number | string>, 
-      obj: { [Prop in keyof Tables[Table]]?: Tables[Table][Prop] }
+      obj: { [Prop in keyof Tables[Table]]?: Tables[Table][Prop] },
+      vals?: Array<number | string>, 
     ): Promise<QueryResult<any>>;
     delete(
       idProps: string[], idVals: Array<number | string>
@@ -110,8 +110,8 @@ export type SqlCrud<Tables> = {
     transactionUpdate(
       client: PoolClient,
       idProps: string[], 
-      idVals: Array<number | string>, 
-      obj: { [Prop in keyof Tables[Table]]?: Tables[Table][Prop] }
+      obj: { [Prop in keyof Tables[Table]]?: Tables[Table][Prop] },
+      vals?: Array<number | string>, 
     ): Promise<QueryResult<any>>;
     transactionDelete(
       client: PoolClient,
