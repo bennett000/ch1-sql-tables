@@ -114,9 +114,10 @@ export function createInsertQuery(
 }
 
 export function createUpdateQuery(
-  name: string, cols: string[], vals: any[], idProps: string[]
+  name: string, cols: string[], idProps: string[]
 ): string {
   const inputs = cols.map((col, i) => `${col} = $${i + 1}`).join(', ');
+  
   return `UPDATE ${name} SET ${inputs} WHERE ` + idProps.map((prop, i) => {
     return `${prop} = $${cols.length + i}`;
   }).join(' AND ');
@@ -251,13 +252,31 @@ export function update<T>(
 
   const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
 
+  const idPropMap = validColVals.cols.reduce((ipm, el, i) => {
+    if (idProps.indexOf(el) > -1) {
+      ipm.indexes.push(i);
+    } else {
+      ipm.filtered.push(el);
+    }
+    return ipm;
+  }, { indexes: [], filtered: [] });
+
+  const idValueMap = validColVals.vals.reduce((ivm, el, i) => {
+    if (idPropMap.indexes.indexOf(i) > -1) {
+      ivm.last.push(el);
+    } else {
+      ivm.first.push(el);
+    }
+    return ivm;
+  }, { first: [], last: [] });
+
   const q = createUpdateQuery(
-    tableName, validColVals.cols, validColVals.vals, idProps,
+    tableName, idPropMap.filtered, idProps,
   );
 
   sql('Attempting query', q);
 
-  return query(queryFn, q, validColVals.vals);
+  return query(queryFn, q, idValueMap.first.concat(idValueMap.last));
 }
 
 export function deleteFrom(
