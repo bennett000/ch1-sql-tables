@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.9
+
+- inputs and updates lowercase table/struct props
+
 ## 1.2.8
 
 - typegen only forces lowercase on props, excluding the collection interface
