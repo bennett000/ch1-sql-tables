@@ -3,6 +3,8 @@ import {
   isString,
   toIntBetweenOptional,
   identity,
+  findCaseInsensitivePropInObj,
+  isBoolean,
 } from '@ch1/utility';
 import {
   SchemaStrict,
@@ -81,9 +83,9 @@ export function validatePropValsForInput(
 ) {
   return cols
     .reduce((state, prop, i) => {
-      const item: SchemaStructProp = struct[prop];
+      const item: SchemaStructProp | boolean = findCaseInsensitivePropInObj(struct, prop);
 
-      if (item) {
+      if (!isBoolean(item)) {
         if (hasDbOnlyConstraints(item)) {
           // don't add it if it's db only
         } else {
@@ -192,7 +194,7 @@ function colsAndValsFromColsOrObject<T>(
     }
   } else {
     cols = Object.keys(colsOrObject);
-    vals = cols.map(col => (colsOrObject as any)[col.toLowerCase()]);
+    vals = cols.map(col => (colsOrObject as any)[col]);
   }
   
   return {

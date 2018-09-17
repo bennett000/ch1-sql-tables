@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.10
+
+- col/val validator is completely case insensitive
+
 ## 1.2.9
 
 - inputs and updates lowercase table/struct props
