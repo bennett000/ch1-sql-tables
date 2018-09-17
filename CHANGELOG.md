@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.5
+
+- Update function increments the placeholder counter
+
 ## 1.2.4
 
 - Update function actually isolates the idProps

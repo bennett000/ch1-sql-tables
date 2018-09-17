@@ -119,7 +119,7 @@ export function createUpdateQuery(
   const inputs = cols.map((col, i) => `${col} = $${i + 1}`).join(', ');
   
   return `UPDATE ${name} SET ${inputs} WHERE ` + idProps.map((prop, i) => {
-    return `${prop} = $${cols.length + i}`;
+    return `${prop} = $${cols.length + i + 1}`;
   }).join(' AND ');
 }
 
