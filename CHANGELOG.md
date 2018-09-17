@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.1
+
+- Expose public types sql-tables depends on from `pg` library
+
 ## 1.2.0
 
 - generate typescript now produces a summary interface
