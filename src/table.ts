@@ -192,7 +192,7 @@ function colsAndValsFromColsOrObject<T>(
     }
   } else {
     cols = Object.keys(colsOrObject);
-    vals = cols.map(col => (colsOrObject as any)[col]);
+    vals = cols.map(col => (colsOrObject as any)[col.toLowerCase()]);
   }
   
   return {
