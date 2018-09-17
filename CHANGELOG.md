@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.2.6
+
+- typegen schema name output is now all lowercase
+
 ## 1.2.5
 
 - Update function increments the placeholder counter
