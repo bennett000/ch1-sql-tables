@@ -29,7 +29,7 @@ export function schemaToTypeScript(schema: SchemaStrict): string {
 
 export function dbInterfaceFromSchema(schema: SchemaStrict) {
   return objReduce(schema, (state: string, prop, name: string) => {
-    state += `  ${name.toLowerCase()}: ${name};\n`;
+    state += `  ${name}: ${name};\n`;
     return state;
   }, 'export interface DbSchema {\n') + '}';
 }
