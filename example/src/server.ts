@@ -1,6 +1,7 @@
 import * as express from 'express';
 import { Request, Response } from 'express';
 import { Handler } from './api';
+import * as env from './env';
 
 const cors = require('cors');
 const helmet = require('helmet');
@@ -10,7 +11,7 @@ const RateLimit = require('express-rate-limit');
 
 export function initServer(api: Handler[]) {
   const app = express();
-  const port = process.env.SQLT_API_PORT || 8282;
+  const port = env.apiPort;
 
   const corsOptions = {
     methods: 'POST,GET',

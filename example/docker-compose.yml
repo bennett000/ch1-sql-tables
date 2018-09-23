@@ -7,12 +7,12 @@ services:
     ports:
      - "8282:8282"
     environment:
-     - SQLT_API_PORT=8282
-     - SQLT_PG_USER=sql-tables-example
-     - SQLT_PG_DB=sql-tables-example
-     - SQLT_PG_PASS=this-is-dev
-     - SQLT_PG_HOST=postgres
-     - SQLT_PG_PORT=5432
+     - API_PORT=8282
+     - DB_USER=sql-tables-example
+     - DB_NAME=sql-tables-example
+     - DB_PASS=this-is-dev
+     - DB_HOST=postgres
+     - DB_PORT=5432
     depends_on:
      - "postgres"
     volumes:

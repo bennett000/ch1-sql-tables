@@ -3,7 +3,7 @@ import { randomName } from './names';
 import { schema } from './schema';
 import { SqlDb } from '@ch1/sql-tables';
 
-export const schemaName = 'sql-tables-example';
+import * as env from './env';
 
 export function create() {
   return createSql<{
@@ -14,11 +14,11 @@ export function create() {
       id: string, userId: string, post: string
     },
   }>({
-    user: schemaName,
-    database: schemaName,
-    password: 'this-is-dev',
-    host: 'postgres',
-    port: 5432,
+    user: env.dbUser,
+    database: env.dbName,
+    password: env.dbPass,
+    host: env.dbHost,
+    port: env.dbPort,
   }, schema);
 }
 

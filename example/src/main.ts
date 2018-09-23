@@ -1,7 +1,7 @@
 import { SchemaValidation } from '@ch1/sql-tables';
 import { initServer } from './server';
 import { api } from './api';
-import { create as createDb, schemaName } from './db';
+import { create as createDb } from './db';
 
 let retryCount = 0;
 const retryMax = 3;
