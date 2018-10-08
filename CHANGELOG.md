@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.3
+
+- Null data no longer breaks decryption
+
 ## 1.3.2
 
 - Crud now uses global passphrase as a default

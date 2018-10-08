@@ -158,7 +158,12 @@ export function mapSelectedRows<T>(schema: SchemaStrict, tableName: string, pass
     return objReduce(structMeta.struct, (mappedRow: any, propValue, propName) => {
       if (passphrase) {
         if (hasAppEncryptionConstraint(propValue)) {
-          mappedRow[propName] = decrypt(passphrase, mappedRow[propName]);
+          if (mappedRow[propName]) {
+            mappedRow[propName] = decrypt(passphrase, mappedRow[propName]);
+          } else {
+            // Ignore the null case
+            mappedRow[propName] = '';
+          }
         }
       }
       mappedRow[propName] = propToJs(propValue, mappedRow[propName]);
