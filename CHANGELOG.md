@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.1
+
+- Fixes an argument order issue in column validator
+
 ## 1.3.0
 
 - Add application layer encryption
