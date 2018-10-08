@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.0
+
+- Add application layer encryption
+
 ## 1.2.10
 
 - col/val validator is completely case insensitive

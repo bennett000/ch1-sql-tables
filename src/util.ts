@@ -1,4 +1,4 @@
-import { Dictionary, toInt } from '@ch1/utility';
+import { Dictionary, toInt, isNumber } from '@ch1/utility';
 
 const chalk = require('chalk');
 
@@ -11,6 +11,17 @@ export function toSqlBoolean(val: boolean): string {
 
 export function toJsBoolean(val: any) {
   return val;
+}
+
+export function toSqlDecimal(val: any) {
+  if (isNumber(val)) {
+    return val + '';
+  }
+  return val;
+}
+
+export function toJsDecimal(val: any) {
+  return parseFloat(val);
 }
 
 

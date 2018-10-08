@@ -1,14 +1,16 @@
 import { SqlConfig, SqlDb } from './interfaces';
 import { Pool, PoolClient } from 'pg';
 import {
-  deleteFrom, insert, select, selectWhere, update, transactionEnd, transactionRollBack, transactionStart, createCrud,
+  deleteFrom, insert, select, selectWhere, update, transactionEnd, transactionRollBack, transactionStart, createCrud, psFallback,
 } from './table';
 import { Schema, strictify } from './schema/schema';
 import { validateAndFixDatabase, FixControls } from './schema/maintainers/maintainers';
+import { partial } from '@ch1/utility';
 
 export function create<Tables>(
   config: SqlConfig,
   schema: Schema,
+  globalPassphrase?: string,
 ): SqlDb<Tables> {
   const p = new Pool(config);
   const schemaStrict = strictify(schema);
@@ -34,6 +36,7 @@ export function create<Tables>(
   };
 
   const query = p.query.bind(p);
+  const fallback: (pass?: string) => string = partial(psFallback, globalPassphrase);
 
   const sql: SqlDb<Tables> = {
     delete: (
@@ -46,22 +49,25 @@ export function create<Tables>(
       tableName: string,
       colsOrObject: string[] | { [P in keyof T]?: T[P] },
       vals: any[] = [],
-    ) => insert<T>(query, schemaStrict, tableName, colsOrObject, vals),
+      passphrase?: string
+    ) => insert<T>(query, schemaStrict, tableName, colsOrObject, vals, fallback(passphrase)),
     onDestroy,
     pool: () => p,
     select: <RowType>(
       tableName: string,
-      cols: string[] = []
-    ) => select<RowType>(query, schemaStrict, tableName, cols),
+      cols: string[] = [],
+      passphrase?: string
+    ) => select<RowType>(query, schemaStrict, tableName, cols, fallback(passphrase)),
     selectWhere: <RowType>(
-      tableName: string, cols: string[], vals: any[],
-    ) => selectWhere<RowType>(query, schemaStrict, tableName, cols, vals),
+      tableName: string, cols: string[], vals: any[], passphrase?: string
+    ) => selectWhere<RowType>(query, schemaStrict, tableName, cols, vals, fallback(passphrase)),
     update: <T>(
       tableName: string,
       idProps: string[],
       colsOrObject: string[] | { [P in keyof T]?: T[P] },
       vals: any[] = [],
-    ) => update(query, schemaStrict, tableName, idProps, colsOrObject, vals),
+      passphrase?: string
+    ) => update(query, schemaStrict, tableName, idProps, colsOrObject, vals, fallback(passphrase)),
     transactionDelete: (
       client: PoolClient,
       tableName: string, 
@@ -75,24 +81,28 @@ export function create<Tables>(
       tableName: string,
       colsOrObject: string[] | { [P in keyof T]?: T[P] },
       vals?: any[],
-    ) => insert<T>(client.query.bind(client), schemaStrict, tableName, colsOrObject, vals),
+      passphrase?: string
+    ) => insert<T>(client.query.bind(client), schemaStrict, tableName, colsOrObject, vals, fallback(passphrase)),
     transactionUpdate: <T>(
       client: PoolClient,
       tableName: string,
       idProps: string[],
       colsOrObject: string[] | { [P in keyof T]?: T[P] },
       vals: any[],
-    ) => update<T>(client.query.bind(client), schemaStrict, tableName, idProps, colsOrObject, vals),
+      passphrase?: string
+    ) => update<T>(client.query.bind(client), schemaStrict, tableName, idProps, colsOrObject, vals, fallback(passphrase)),
     transactionRollBack,
     transactionSelect: <RowType>(
       client: PoolClient,
       tableName: string,
       cols?: string[],
-    ) => select<RowType>(client.query.bind(client), schemaStrict, tableName, cols),
+      passphrase?: string
+    ) => select<RowType>(client.query.bind(client), schemaStrict, tableName, cols, fallback(passphrase)),
     transactionSelectWhere: <RowType>(
       client: PoolClient,
-      tableName: string, cols: string[], vals: any[]
-    ) => selectWhere<RowType>(client.query.bind(client), schemaStrict, tableName, cols, vals),
+      tableName: string, cols: string[], vals: any[],
+      passphrase?: string
+    ) => selectWhere<RowType>(client.query.bind(client), schemaStrict, tableName, cols, vals, fallback(passphrase)),
     tables: createCrud(query, schemaStrict),
     validateAndFixDatabase: (fixControls: FixControls = {
       additive: true,

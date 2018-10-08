@@ -2,11 +2,15 @@ import {
   createInsertQuery,
   createReduceCompoundInsertOrSelectResults,
   hasQueryError,
+  insert,
   isValidResult,
   reduceByKeys,
   query,
   validatePropValsForInput,
+  select,
 } from './table';
+import { SchemaStrict, strictify } from './schema/schema';
+import { QueryFn } from './interfaces';
 
 describe('table specs', () => {
   describe('createInsertQuery function', () => {
@@ -104,6 +108,7 @@ describe('table specs', () => {
   });
 
   describe('validatePropValsForInput function', () => {
+    const passphrase = 'password';
     it('should handle an existing case', () => {
       const expected = {
         cols: ['name'],
@@ -111,7 +116,7 @@ describe('table specs', () => {
       };
       const result = validatePropValsForInput({
         name: { type: 'String' },
-      }, ['name'], ['jane']);
+      }, ['name'], ['jane'], passphrase);
 
       expect(result).toEqual(expected);
     });
@@ -124,7 +129,7 @@ describe('table specs', () => {
       const result = validatePropValsForInput({
         name: { type: 'String' },
         rank: { type: 'String' },
-      }, ['name', 'rank'], ['jane', 'major']);
+      }, ['name', 'rank'], ['jane', 'major'], passphrase);
 
       expect(result).toEqual(expected);
     });
@@ -136,9 +141,92 @@ describe('table specs', () => {
       };
       const result = validatePropValsForInput({
         name: { type: 'String' },
-      }, ['name', 'rank'], ['jane', 'major']);
+      }, ['name', 'rank'], ['jane', 'major'], passphrase);
 
       expect(result).toEqual(expected);
+    });
+  });
+
+  describe('integration tests', () => {
+    let schema: SchemaStrict;
+    let queryFn: QueryFn<any>;
+    let lastQuery: string;
+    let lastValues: any[];
+    let queryResults: any[];
+
+    beforeEach(() => {
+      queryResults = [];
+      queryFn = (query: string, values = []) => {
+        lastQuery = query;
+        lastValues = values;
+        return Promise.resolve({ rows: queryResults });
+      };
+      schema = strictify({
+        Users: {
+          nameFirst: 'String',
+        },
+        Data: {
+          notSecret: 'String',
+          secret: {
+            constraints: [ 'EncryptAppLayer' ],
+            type: 'String',
+            typeMax: 255
+          },
+        }
+      });
+    });
+
+    describe('insert', () => {
+      it('calls the expected query', () => {
+        return insert(queryFn, schema, 'Users', {
+          nameFirst: 'Jo',
+        }, undefined, 'foo')
+          .then(() => {
+            expect(lastQuery).toBe('INSERT INTO Users (nameFirst) VALUES ($1)');
+            expect(lastValues[0]).toBe('Jo');
+          })
+      });
+
+      it('encrypts table level calls', () => {
+        return insert(queryFn, schema, 'Data', {
+          notSecret: 'Clear Text',
+          secret: 'Top Secret!!',
+        }, undefined, 'foo')
+          .then(() => {
+            expect(lastValues[0]).toBe('Clear Text');
+            expect(lastValues[1]).toBe('41384812395461a9623b8602ac624794');
+          })
+      });
+    });
+
+    describe('select', () => {
+      it('decrypts the table calls if password is provided', () => {
+        queryResults = [
+          { notSecret: 'Hi there', secret: '41384812395461a9623b8602ac624794' },
+          { notSecret: 'Word', secret: '41384812395461a9623b8602ac624794' },
+        ];
+        return select(queryFn, schema, 'Data', undefined, 'foo')
+          .then((rows) => {
+            expect(rows[0].notSecret).toBe('Hi there');
+            expect(rows[1].notSecret).toBe('Word');
+            expect(rows[0].secret).toBe('Top Secret!!');
+            expect(rows[1].secret).toBe('Top Secret!!');
+          });
+      }); 
+
+      it('returns encrypted results if password is an empty string ("")', () => {
+        queryResults = [
+          { notSecret: 'Hi there', secret: '41384812395461a9623b8602ac624794' },
+          { notSecret: 'Word', secret: '41384812395461a9623b8602ac624794' },
+        ];
+        return select(queryFn, schema, 'Data', undefined, undefined)
+          .then((rows) => {
+            expect(rows[0].notSecret).toBe('Hi there');
+            expect(rows[1].notSecret).toBe('Word');
+            expect(rows[0].secret).toBe('41384812395461a9623b8602ac624794');
+            expect(rows[1].secret).toBe('41384812395461a9623b8602ac624794');
+          });
+      }); 
     });
   });
 });

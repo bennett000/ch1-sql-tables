@@ -1,26 +1,26 @@
 import { Pool, PoolClient, QueryResult, SqlCrud, TableRow, QueryFn } from './interfaces';
 import {
-  isString,
-  toIntBetweenOptional,
   identity,
   findCaseInsensitivePropInObj,
   isBoolean,
+  objReduce,
+  isString,
+  partial,
 } from '@ch1/utility';
 import {
   SchemaStrict,
   SchemaStructStrict,
   SchemaStructProp,
-  SchemaType,
 } from './schema/schema';
 import {
   hasDbOnlyConstraints,
-  isSchemaType,
+  hasAppEncryptionConstraint,
 } from './schema/schema-guards';
-import { toGeneral,  toSql } from './type-converters';
+import { propToJs, propToSql } from './type-converters';
 import {
   sql,
-  warn,
 } from './util';
+import { encrypt, decrypt } from './crypto';
 
 export const isValidResult = (result: QueryResult<any>) => (result &&
 Array.isArray(result.rows) &&
@@ -44,42 +44,9 @@ export function getStruct(
   return Object.assign({}, schema[tableName].struct);
 }
 
-export function propSchemaToSql(prop: SchemaStructProp, value: any) {
-  let converted: any;
-  if (toSql[prop.type]) {
-    converted = toSql[prop.type](value);
-  }
-  if (toGeneral[prop.type]) {
-    converted = toGeneral[prop.type](value);
-  }
-  if (isString(converted)) {
-    if (prop.typeMax) {
-      return converted.slice(0, prop.typeMax);
-    }
-    return converted;
-  }
-
-  return toIntBetweenOptional(prop.typeMin, prop.typeMax, value);
-}
-
-export function propToSql(
-  prop: SchemaType | SchemaStructProp, value: any
-) {
-  if (isSchemaType(prop)) {
-    if (toSql[prop]) {
-      return toSql[prop](value);
-    }
-    if (toGeneral[prop]) {
-      return toGeneral[prop](value);
-    }
-    warn(`propToSql: no validator found for type ${prop}`);
-    return '';
-  }
-  return propSchemaToSql(prop, value);
-}
 
 export function validatePropValsForInput(
-  struct: SchemaStructStrict, cols: string[], vals: any[]
+  struct: SchemaStructStrict, cols: string[], vals: any[], passphrase: string
 ) {
   return cols
     .reduce((state, prop, i) => {
@@ -90,7 +57,18 @@ export function validatePropValsForInput(
           // don't add it if it's db only
         } else {
           state.cols.push(prop);
-          state.vals.push(propToSql(item, vals[i]));
+          const value = propToSql(item, vals[i]);
+          // should we encrypt?
+          if (hasAppEncryptionConstraint(item)) {
+            if (passphrase) {
+              state.vals.push(encrypt(passphrase, value));
+            } else {
+              throw new TypeError('validatePropsForInput: app encryption constraint enabled for ' +
+              prop + ' but no passphrase provided');
+            }
+          } else {
+            state.vals.push(value);
+          }
         }
       }
 
@@ -155,7 +133,7 @@ export function selectWhereValidator(
 }
 
 export function selectWhere<RowType>(
-  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[], vals: any[]
+  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[], vals: any[], passphrase: string
 ): Promise<RowType[]> {
   const tableSchema = selectWhereValidator(schema, tableName, cols, vals);
   if (tableSchema instanceof Error) {
@@ -163,19 +141,41 @@ export function selectWhere<RowType>(
   }
 
   const validColVals =
-    validatePropValsForInput(tableSchema, cols, vals);
+    validatePropValsForInput(tableSchema, cols, vals, passphrase);
 
   const q = createSelectWhereQuery(tableName, validColVals.cols);
 
-  return query<RowType>(queryFn, q, validColVals.vals).then(pluckRows);
+  return query<RowType>(queryFn, q, validColVals.vals).then(pluckRows)
+    .then((rows) => {
+      return mapSelectedRows(schema, tableName, passphrase, rows);
+    });
+}
+
+export function mapSelectedRows<T>(schema: SchemaStrict, tableName: string, passphrase: string, rows: T[]): T[] {
+  const structMeta = schema[tableName];
+
+  return rows.map((row) => {
+    return objReduce(structMeta.struct, (mappedRow: any, propValue, propName) => {
+      if (passphrase) {
+        if (hasAppEncryptionConstraint(propValue)) {
+          mappedRow[propName] = decrypt(passphrase, mappedRow[propName]);
+        }
+      }
+      mappedRow[propName] = propToJs(propValue, mappedRow[propName]);
+      return mappedRow;
+    }, row);
+  });
 }
 
 export function select<RowType>(
-  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[] = []
+  queryFn: QueryFn<RowType>, schema: SchemaStrict, tableName: string, cols: string[] = [], passphrase: string = ''
 ): Promise<RowType[]> {
   const q = createSelectAllQuery(tableName, cols);
 
-  return query<RowType>(queryFn, q).then(pluckRows);
+  return query<RowType>(queryFn, q).then(pluckRows)
+    .then((rows) => {
+      return mapSelectedRows(schema, tableName, passphrase, rows);
+    });
 }
 
 function colsAndValsFromColsOrObject<T>(
@@ -209,6 +209,7 @@ export function insert<T>(
   tableName: string, 
   colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
   vals: any[] = [],
+  passphrase: string
 ): Promise<QueryResult<any>> {
   const cnv = colsAndValsFromColsOrObject(colsOrObject, vals);
 
@@ -222,7 +223,7 @@ export function insert<T>(
     throw new Error(`insert: table not found ${tableName}`);
   }
 
-  const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
+  const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals, passphrase);
 
   const q = createInsertQuery(
     tableName, validColVals.cols, validColVals.vals
@@ -240,6 +241,7 @@ export function update<T>(
   idProps: string[],
   colsOrObject: string[] | { [P in keyof T]?: T[P]}, 
   vals: any[] = [],
+  passphrase: string
 ): Promise<QueryResult<any>> {
   const cnv = colsAndValsFromColsOrObject(colsOrObject, vals);
 
@@ -252,7 +254,7 @@ export function update<T>(
     return Promise.reject(new Error(`insert: table not found ${tableName}`));
   }
 
-  const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals);
+  const validColVals = validatePropValsForInput(struct, cnv.cols, cnv.vals, passphrase);
 
   const idPropMap = validColVals.cols.reduce((ipm, el, i) => {
     if (idProps.indexOf(el) > -1) {
@@ -334,54 +336,6 @@ export function createReduceCompoundInsertOrSelectResults(depCols: string[]) {
   };
 }
 
-// export function compoundInsertOrSelectIfExists(
-//   schema: SchemaStrict, tableName: string, cols: string[], vals: any[],
-//   depObservables: Observable<TableRow[]>[],
-//   depCols: string[],
-//   ...keyIndexes: number[]
-// ) {
-//   return Observable
-//     .zip(
-//       ...depObservables,
-//       (...deps: any[]) => deps
-//     )
-//     .map(createReduceCompoundInsertOrSelectResults(depCols))
-//     .flatMap((results) => insertOrSelectIfExistsObservable(
-//       schema,
-//       tableName,
-//       [...cols, ...depCols],
-//       [...vals, ...results],
-//       ...keyIndexes
-//     ));
-// }
-
-// export function insertOrSelectIfExistsObservable<T extends TableRow>(
-//   schema: SchemaStrict,
-//   tableName: string,
-//   cols: string[],
-//   vals: any[],
-//   ...keyIndexes: number[]
-// ): Observable<T[]> {
-//   const reducedCols = cols.reduce(reduceByKeys(keyIndexes), []);
-//   const reducedVals = vals.reduce(reduceByKeys(keyIndexes), []);
-
-//   const swo = selectWhereObservable(
-//     schema,
-//     tableName,
-//     reducedCols,
-//     reducedVals
-//   );
-
-//   return swo.flatMap((result1: QueryResult<any>) => isValidResult(result1) ?
-//     Observable.of(result1.rows) :
-//     insert(schema, tableName, cols, vals)
-//       .flatMap(() => swo
-//         .flatMap((result2: QueryResult<any>) => isValidResult(result2) ?
-//           Observable.of(result2.rows) :
-//           Observable.throw(new Error('insertOrSelectWhere: unknown fail'))))
-//   );
-// }
-
 function makeParamReducer(chunkSize?: number) {
   return (vstr: string, v: string, i: number, arr: string[]) => {
     const pos = i + 1;
@@ -444,44 +398,72 @@ export function transactionRollBack(client: PoolClient, err?: Error): Promise<Qu
     });
 }
 
+export function psFallback(globalPassphrase?: string, passphrase?: string) {
+  if (isString(passphrase)) {
+    return passphrase;
+  }
+  return globalPassphrase || '';
+}
+
 export function createCrud<T>(
   queryFn: QueryFn<any>,
-  schema: SchemaStrict
+  schema: SchemaStrict,
+  globalPassphrase?: string,
 ): SqlCrud<T> {
+  const fallback: (pass?: string) => string = partial(psFallback, globalPassphrase);
   return Object.keys(schema).reduce((
     crud: SqlCrud<T>, el: string
   ) => {
     (crud as any)[el] = {
-      insert: insert.bind(null, queryFn, schema, el),
-      update: update.bind(null, queryFn, schema, el),
+      insert: (
+        colsOrObject: string[] | { [P in keyof T]?: T[P] },
+        vals?: any[],
+        passphrase?: string
+      ) => insert(queryFn, schema, el, colsOrObject, vals, fallback(passphrase)),
+      update: (
+        idProps: string[],
+        colsOrObject: string[] | { [P in keyof T]?: T[P] },
+        vals: any[],
+        passphrase?: string
+      ) => update(queryFn, schema, el, idProps, colsOrObject, vals, fallback(passphrase)),
       delete: deleteFrom.bind(null, queryFn, schema, el),
-      select: select.bind(null, queryFn, schema, el),
-      selectWhere: selectWhere.bind(null, queryFn, schema, el),
-    transactionDelete: (
-      client: PoolClient,
-      idProps: string[], 
-      idValues: Array<number | string>
-    ) => deleteFrom(client.query.bind(client), schema, el, idProps, idValues),
-    transactionInsert: <T>(
-      client: PoolClient,
-      colsOrObject: string[] | { [P in keyof T]?: T[P] },
-      vals?: any[],
-    ) => insert<T>(client.query.bind(client), schema, el, colsOrObject, vals),
-    transactionUpdate: <T>(
-      client: PoolClient,
-      idProps: string[],
-      colsOrObject: string[] | { [P in keyof T]?: T[P] },
-      vals: any[],
-    ) => update<T>(client.query.bind(client), schema, el, idProps, colsOrObject, vals),
-    transactionSelect: <RowType>(
-      client: PoolClient,
-      el: string,
-      cols?: string[],
-    ) => select<RowType>(client.query.bind(client), schema, el, cols),
-    transactionSelectWhere: <RowType>(
-      client: PoolClient,
-      el: string, cols: string[], vals: any[]
-    ) => selectWhere<RowType>(client.query.bind(client), schema, el, cols, vals),
+      select: (
+        cols?: string[],
+        passphrase?: string
+      ) => select(queryFn, schema, el, cols, fallback(passphrase)),
+      selectWhere: (
+        el: string, cols: string[], vals: any[],
+        passphrase?: string
+      ) => selectWhere(queryFn, schema, el, cols, vals, fallback(passphrase)),
+      transactionDelete: (
+        client: PoolClient,
+        idProps: string[],
+        idValues: Array<number | string>
+      ) => deleteFrom(client.query.bind(client), schema, el, idProps, idValues),
+      transactionInsert: <T>(
+        client: PoolClient,
+        colsOrObject: string[] | { [P in keyof T]?: T[P] },
+        vals?: any[],
+        passphrase?: string
+      ) => insert<T>(client.query.bind(client), schema, el, colsOrObject, vals, fallback(passphrase)),
+      transactionUpdate: <T>(
+        client: PoolClient,
+        idProps: string[],
+        colsOrObject: string[] | { [P in keyof T]?: T[P] },
+        vals: any[],
+        passphrase?: string,
+      ) => update<T>(client.query.bind(client), schema, el, idProps, colsOrObject, vals, fallback(passphrase)),
+      transactionSelect: <RowType>(
+        client: PoolClient,
+        el: string,
+        cols?: string[],
+        passphrase?: string,
+      ) => select<RowType>(client.query.bind(client), schema, el, cols, fallback(passphrase)),
+      transactionSelectWhere: <RowType>(
+        client: PoolClient,
+        el: string, cols: string[], vals: any[],
+        passphrase?: string
+      ) => selectWhere<RowType>(client.query.bind(client), schema, el, cols, vals, fallback(passphrase)),
     };
     return crud;
   }, {} as SqlCrud<T>);
