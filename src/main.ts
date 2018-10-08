@@ -103,7 +103,7 @@ export function create<Tables>(
       tableName: string, cols: string[], vals: any[],
       passphrase?: string
     ) => selectWhere<RowType>(client.query.bind(client), schemaStrict, tableName, cols, vals, fallback(passphrase)),
-    tables: createCrud(query, schemaStrict),
+    tables: createCrud(query, schemaStrict, globalPassphrase),
     validateAndFixDatabase: (fixControls: FixControls = {
       additive: true,
       codeToDbNotNull: true,

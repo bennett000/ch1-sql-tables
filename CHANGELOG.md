@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.2
+
+- Crud now uses global passphrase as a default
+
 ## 1.3.1
 
 - Fixes an argument order issue in column validator
