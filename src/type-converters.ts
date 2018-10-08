@@ -6,11 +6,18 @@ import {
   toIntMin,
   toIntBetween,
   toString,
+  isString,
+  toIntBetweenOptional,
 } from '@ch1/utility';
 import {
   toJsBoolean,
   toSqlBoolean,
+  toJsDecimal,
+  toSqlDecimal,
+  warn,
 } from './util';
+import { SchemaStructProp, SchemaType } from './schema/schema';
+import { isSchemaType } from './schema/schema-guards';
 
 /**
  *  This file is three sets of functions designed for *internal* use within the
@@ -49,8 +56,68 @@ export const toGeneral: TypeCasterDict = deepFreeze({
 
 export const toJs: TypeCasterDict = deepFreeze({
   Boolean: toJsBoolean,
+  Decimal: toJsDecimal,
 });
 
 export const toSql: TypeCasterDict = deepFreeze({
   Boolean: toSqlBoolean,
+  Decimal: toSqlDecimal,
 });
+
+export function propSchemaToJs(prop: SchemaStructProp, value: any) {
+  let converted: any;
+  if (toJs[prop.type]) {
+    converted = toSql[prop.type](value);
+  }
+  if (isString(converted)) {
+    return converted;
+  }
+
+  return value;
+}
+
+export function propToJs(
+  prop: SchemaType | SchemaStructProp, value: any
+) {
+  if (isSchemaType(prop)) {
+    if (toJs[prop]) {
+      return toJs[prop](value);
+    }
+    return value;
+  }
+  return propSchemaToJs(prop, value);
+}
+
+export function propSchemaToSql(prop: SchemaStructProp, value: any) {
+  let converted: any;
+  if (toSql[prop.type]) {
+    converted = toSql[prop.type](value);
+  }
+  if (toGeneral[prop.type]) {
+    converted = toGeneral[prop.type](value);
+  }
+  if (isString(converted)) {
+    if (prop.typeMax) {
+      return converted.slice(0, prop.typeMax);
+    }
+    return converted;
+  }
+
+  return toIntBetweenOptional(prop.typeMin, prop.typeMax, value);
+}
+
+export function propToSql(
+  prop: SchemaType | SchemaStructProp, value: any
+) {
+  if (isSchemaType(prop)) {
+    if (toSql[prop]) {
+      return toSql[prop](value);
+    }
+    if (toGeneral[prop]) {
+      return toGeneral[prop](value);
+    }
+    warn(`propToSql: no validator found for type ${prop}`);
+    return '';
+  }
+  return propSchemaToSql(prop, value);
+}

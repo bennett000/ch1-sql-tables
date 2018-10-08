@@ -216,7 +216,8 @@ export type SchemaConstraint =
   // will respect it
   'DbInternal' |
 
-  // to implement
+  // enables app layer encryption
+  // see app layer encryption docs below 
   'EncryptAppLayer' |
 
   // to implement
@@ -333,6 +334,7 @@ export interface SqlDb<Tables> {
       tableName: string,
       colsOrObject: string[] | { [P in keyof T]?: T[P] },
       vals?: any[],
+      passphrase?: string,
   ): Promise<any>;
 
   // in the event of a catastrophic error this object emits a 
@@ -349,6 +351,7 @@ export interface SqlDb<Tables> {
   select<RowType>(
     tableName: string,
     cols?: string[],
+    passphrase?: string,
   ): Promise<RowType[]>;
 
   // select things _where_ some condition is true
@@ -356,7 +359,8 @@ export interface SqlDb<Tables> {
   // are the columns to select and `vals` are the values to use
   // uses an `AND` in the event of multiple column/values pairs
   selectWhere<RowType>(
-    tableName: string, cols: string[], vals: any[]
+    tableName: string, cols: string[], vals: any[],
+    passphrase?: string,
   ): Promise<RowType[]>;
 
 
@@ -368,6 +372,7 @@ export interface SqlDb<Tables> {
     idProps: string[],
     colsOrObject: string[] | { [P in keyof T]?: T[P] },
     vals?: any[],
+    passphrase?: string,
   ): Promise<any>;
 
   // calls a delete query (see `SqlDb.delete`)
@@ -399,6 +404,7 @@ export interface SqlDb<Tables> {
     tableName: string,
     colsOrObject: string[] | { [P in keyof T]?: T[P] },
     vals?: any[],
+    passphrase?: string,
   ): Promise<any>;
 
   // calls a update query (see `SqlDb.update`)
@@ -409,6 +415,7 @@ export interface SqlDb<Tables> {
     idProps: string[],
     colsOrObject: string[] | { [P in keyof T]?: T[P] },
     vals: any[],
+    passphrase?: string,
   ): Promise<any>;
 
   // this will rollback the transaction in progress
@@ -422,13 +429,15 @@ export interface SqlDb<Tables> {
     client: PoolClient,
     tableName: string,
     cols?: string[],
+    passphrase?: string,
   ): Promise<RowType[]>;
 
   // calls a selectWhere selectWhere (see `SqlDb.selectWhere`)
   // client is a `PoolClient` from `SqlDb.transactionStart`
   transactionSelectWhere<RowType>(
     client: PoolClient,
-    tableName: string, cols: string[], vals: any[]
+    tableName: string, cols: string[], vals: any[],
+    passphrase?: string,
   ): Promise<RowType[]>;
 
   // tables is an `SqlCrud`, in short it is a dictionary where the keys
@@ -521,6 +530,158 @@ should contain the filename and extension.
 ```ts
 export function writeTsFromSchema(fullPath: string, schema: SchemaStrict): Promise<void>;
 ```
+
+## Application Layer Encryption
+
+One of the constraint options is `EncryptAppLayer`.  This feature enables
+encryption in the application layer.  The Database is ignorant of the 
+encryption and should expect a String 255.
+
+The default encryption algo is Blowfish.
+
+Passphrasing can be implemented in any combination of the following ways:
+
+* global passphrases as a fallback
+* passphrases provided on select/insert/update calls
+* selects with no passphrase (encrypted column results)
+
+Example 1:
+
+
+```ts
+// This is a "global encryption" example
+import { create } from '@ch1/sql-tables';
+
+const schema = {
+  Users: {
+    data: {
+      constraints: ['EncryptApplayer'],
+      type: 'String',
+      typeMax: 255,
+    },
+  },
+};
+
+const sql = create(databaseConfig, schema, 'secret passphrase');
+
+sql.tables.Users.insert({ data: 'foo' });
+
+// { data: 'encrypted(foo)' } is now saved in Users, encryption use
+// the passphrase "secret passphrase"
+```
+
+Example 2:
+
+
+```ts
+// This is a "local encryption" example
+import { create } from '@ch1/sql-tables';
+
+const schema = {
+  Users: {
+    data: {
+      constraints: ['EncryptApplayer'],
+      type: 'String',
+      typeMax: 255,
+    },
+  },
+};
+
+const sql = create(databaseConfig, schema, 'secret passphrase');
+
+sql.tables.Users.insert({ data: 'foo' }, 'override passphrase');
+
+// { data: 'encrypted(foo)' } is now saved in Users, encryption use
+// the passphrase "override passphrase"
+```
+
+Example 3:
+
+
+```ts
+// This is an encrypted select example
+import { create } from '@ch1/sql-tables';
+
+const schema = {
+  Users: {
+    data: {
+      constraints: ['EncryptApplayer'],
+      type: 'String',
+      typeMax: 255,
+    },
+  },
+};
+
+const sql = create(databaseConfig, schema, 'secret passphrase');
+
+sql.tables.Users.insert({ data: 'foo' }, 'override passphrase')
+  .then(() => {
+    return sql.tables.Users.select(undefined, '');
+  })
+  .then((rows) => {
+    // rows are selected but contents of encrypted rows stay encrypted
+  });
+
+```
+
+Example 4:
+
+
+```ts
+// This is an decrypted select FAILURE example
+import { create } from '@ch1/sql-tables';
+
+const schema = {
+  Users: {
+    data: {
+      constraints: ['EncryptApplayer'],
+      type: 'String',
+      typeMax: 255,
+    },
+  },
+};
+
+const sql = create(databaseConfig, schema, 'secret passphrase');
+
+sql.tables.Users.insert({ data: 'foo' }, 'override passphrase')
+  .then(() => {
+    return sql.tables.Users.select();
+  })
+  .then((rows) => {
+    // query actually fails, select tries to decrypt with "secret passphrase" 
+  });
+
+```
+
+Example 5:
+
+
+```ts
+// This is an decrypted select example
+import { create } from '@ch1/sql-tables';
+
+const schema = {
+  Users: {
+    data: {
+      constraints: ['EncryptApplayer'],
+      type: 'String',
+      typeMax: 255,
+    },
+  },
+};
+
+const sql = create(databaseConfig, schema, 'secret passphrase');
+
+sql.tables.Users.insert({ data: 'foo' }, 'override passphrase')
+  .then(() => {
+    return sql.tables.Users.select(undefined, 'override passphrase');
+  })
+  .then((rows) => {
+    // columns are decrypted using 'override passphrase'
+  });
+
+```
+
 
 
 ## License

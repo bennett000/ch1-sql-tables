@@ -1,4 +1,4 @@
-import { Dictionary, isObject } from '@ch1/utility';
+import { Dictionary, isObject, objReduce } from '@ch1/utility';
 import {
   SchemaNonNumeric,
   SchemaNumeric,
@@ -95,6 +95,19 @@ export function hasConstraint(
   }
 
   return false;
+}
+
+export function structHasAppEncryptionConstraint(struct: SchemaStructStrict) {
+  return objReduce(struct, (state, prop) => {
+    if (state) {
+      return state;
+    }
+    return hasAppEncryptionConstraint(prop);
+  }, false);
+}
+
+export function hasAppEncryptionConstraint(prop: SchemaStructProp): boolean {
+  return hasConstraint('EncryptAppLayer', prop);
 }
 
 
