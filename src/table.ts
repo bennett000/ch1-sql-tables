@@ -432,7 +432,7 @@ export function createCrud<T>(
         passphrase?: string
       ) => select(queryFn, schema, el, cols, fallback(passphrase)),
       selectWhere: (
-        el: string, cols: string[], vals: any[],
+        cols: string[], vals: any[],
         passphrase?: string
       ) => selectWhere(queryFn, schema, el, cols, vals, fallback(passphrase)),
       transactionDelete: (
