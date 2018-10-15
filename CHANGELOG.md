@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.4
+
+- crud's `transactionSelect` and `transactionSelectWhere` now use correct arguments
+
 ## 1.3.3
 
 - Null data no longer breaks decryption
