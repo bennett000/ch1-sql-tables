@@ -460,13 +460,12 @@ export function createCrud<T>(
       ) => update<T>(client.query.bind(client), schema, el, idProps, colsOrObject, vals, fallback(passphrase)),
       transactionSelect: <RowType>(
         client: PoolClient,
-        el: string,
         cols?: string[],
         passphrase?: string,
       ) => select<RowType>(client.query.bind(client), schema, el, cols, fallback(passphrase)),
       transactionSelectWhere: <RowType>(
         client: PoolClient,
-        el: string, cols: string[], vals: any[],
+        cols: string[], vals: any[],
         passphrase?: string
       ) => selectWhere<RowType>(client.query.bind(client), schema, el, cols, vals, fallback(passphrase)),
     };
