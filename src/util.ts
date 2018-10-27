@@ -2,15 +2,18 @@ import { Dictionary, toInt, isNumber } from '@ch1/utility';
 
 const chalk = require('chalk');
 
+const TRUE = 'TRUE';
+const FALSE = 'FALSE';
+
 export function toSqlBoolean(val: boolean): string {
   if (val) {
-    return 'TRUE';
+    return TRUE;
   }
-  return 'FALSE';
+  return FALSE;
 }
 
 export function toJsBoolean(val: any) {
-  return val;
+  return val === TRUE ? true : false;
 }
 
 export function toSqlDecimal(val: any) {
