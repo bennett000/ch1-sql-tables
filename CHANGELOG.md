@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.6
+
+- System actually uses toJs functions now
+
 ## 1.3.5
 
 - Boolean data from DB actually converts to JS booleans now

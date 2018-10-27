@@ -67,13 +67,12 @@ export const toSql: TypeCasterDict = deepFreeze({
 export function propSchemaToJs(prop: SchemaStructProp, value: any) {
   let converted: any;
   if (toJs[prop.type]) {
-    converted = toSql[prop.type](value);
-  }
-  if (isString(converted)) {
-    return converted;
+    converted = toJs[prop.type](value);
+  } else {
+    converted = value;
   }
 
-  return value;
+  return converted;
 }
 
 export function propToJs(
