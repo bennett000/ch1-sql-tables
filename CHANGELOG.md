@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.5
+
+- Boolean data from DB actually converts to JS booleans now
+
 ## 1.3.4
 
 - crud's `transactionSelect` and `transactionSelectWhere` now use correct arguments
