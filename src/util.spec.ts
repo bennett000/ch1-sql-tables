@@ -25,8 +25,16 @@ describe('utility functions', () => {
       expect(toJsBoolean('foo')).toBe(false);
     });
 
-    it ('converts TRUE to true', () => {
+    it ('converts "TRUE" to true', () => {
       expect(toJsBoolean('TRUE')).toBe(true);
+    });
+
+    it ('converts "t" to true', () => {
+      expect(toJsBoolean('t')).toBe(true);
+    });
+
+    it ('respects booleans', () => {
+      expect(toJsBoolean(true)).toBe(true);
     });
   });
 });

@@ -1,5 +1,9 @@
 # CHANGE LOG
 
+## 1.3.7
+
+- Detects automatically converted booleans
+
 ## 1.3.6
 
 - System actually uses toJs functions now
