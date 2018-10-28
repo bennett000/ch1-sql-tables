@@ -13,7 +13,16 @@ export function toSqlBoolean(val: boolean): string {
 }
 
 export function toJsBoolean(val: any) {
-  return val === TRUE ? true : false;
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  if (val === 't') {
+    return true;
+  }
+  if (val === TRUE) {
+    return true;
+  }
+  return false;
 }
 
 export function toSqlDecimal(val: any) {
