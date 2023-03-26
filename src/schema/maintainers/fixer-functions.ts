@@ -96,7 +96,7 @@ export function createColumnFromProp(name: string, prop: SchemaStructProp) {
       `${createReferences(prop)}`;
   }
 
-  let evaluatedType: string = mapping.createA;
+  let evaluatedType: string = mapping.createA || '';
 
   if (type === 'String' && isSchemaStructProp(prop)) {
     evaluatedType = varChar(prop.typeMax || MAX_VAR_CHAR);

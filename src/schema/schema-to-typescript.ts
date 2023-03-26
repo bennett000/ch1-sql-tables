@@ -38,7 +38,7 @@ export function writeTsFromSchema(fullPath: string, schema: SchemaStrict) {
   const tableInterfaces = schemaToTypeScript(schema);
   const dbInterface = dbInterfaceFromSchema(schema);
   const interfaces = tableInterfaces + dbInterface;
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     writeFile(fullPath, interfaces, (err: Error|null) => {
       if (err) {
         reject(err);
