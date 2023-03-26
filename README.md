@@ -1,9 +1,6 @@
 SQL Tables
 ==========
 
-[![CircleCI](https://circleci.com/gh/bennett000/ch1-sql-tables.svg?style=svg)](https://circleci.com/gh/bennett000/ch1-sql-tables)
-
-
 _This is not well maintained_
 
 _Due to string concatenation in a few spots this library may have injection 
