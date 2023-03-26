@@ -130,7 +130,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'integer',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, ['NotNull']).reason).toBe(TypeMismatch);
+      }, ['NotNull'])?.reason).toBe(TypeMismatch);
     });
 
     it('should return a NotInCode if it does not have a type mapping', () => {
@@ -141,7 +141,7 @@ describe('Schema Maintainer type checking functions', () => {
         data_type: 'barf',
         character_maximum_length: 25,
         numeric_precision: 0,
-      }, ['NotNull']).reason).toBe(NotInCode);
+      }, ['NotNull'])?.reason).toBe(NotInCode);
     });
   });
 

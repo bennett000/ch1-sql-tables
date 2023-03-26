@@ -1,6 +1,5 @@
 import { Dictionary, toInt, isNumber } from '@ch1/utility';
-
-const chalk = require('chalk');
+import chalk from 'chalk';
 
 const TRUE = 'TRUE';
 const FALSE = 'FALSE';

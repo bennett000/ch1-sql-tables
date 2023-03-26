@@ -76,7 +76,7 @@ export function validatePropValsForInput(
     }, {
       cols: [],
       vals: [],
-    });
+    } as { cols: string[], vals: (number | string)[] });
 }
 
 export function createSelectWhereQuery(name: string, cols: string[]): string {
@@ -268,7 +268,7 @@ export function update<T>(
       ipm.filtered.push(el);
     }
     return ipm;
-  }, { indexes: [], filtered: [] });
+  }, { indexes: [], filtered: [] } as { indexes: number[], filtered: string[]});
 
   const idValueMap = validColVals.vals.reduce((ivm, el, i) => {
     if (idPropMap.indexes.indexOf(i) > -1) {
@@ -277,7 +277,7 @@ export function update<T>(
       ivm.first.push(el);
     }
     return ivm;
-  }, { first: [], last: [] });
+  }, { first: [], last: [] } as { first: (number | string)[], last: (number | string)[] });
 
   const q = createUpdateQuery(
     tableName, idPropMap.filtered, idProps,
@@ -341,7 +341,7 @@ export function createReduceCompoundInsertOrSelectResults(depCols: string[]) {
   };
 }
 
-function makeParamReducer(chunkSize?: number) {
+function makeParamReducer(chunkSize = 0) {
   return (vstr: string, v: string, i: number, arr: string[]) => {
     const pos = i + 1;
 

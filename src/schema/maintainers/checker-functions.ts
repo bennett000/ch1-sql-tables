@@ -173,13 +173,13 @@ export function checkForColumnInDb(
 export function flattenSchemaValidationContainers(
   arr: SchemaValidationContainer[]
 ): SchemaValidationCollection {
-  return arr.reduce((s, svc) => {
-    if (svc.error) {
+  return arr.reduce((s, svc: SchemaValidationContainer) => {
+    if (svc.error !== undefined) {
       s.errors.push(svc.error);
     }
     s.names.push(svc.name);
     return s;
-  } , { errors: [], names: [] })
+  } , { errors: [], names: [] } as SchemaValidationCollection)
 }
 
 export function validateColumns(

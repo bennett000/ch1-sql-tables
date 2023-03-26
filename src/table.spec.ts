@@ -77,7 +77,7 @@ describe('table specs', () => {
 
   describe('isValidResult function', () => {
     it('should return false if the result object is falsey', () => {
-      expect(isValidResult(undefined)).toEqual(false);
+      expect(isValidResult(undefined as any)).toEqual(false);
     });
 
     it('should return false if there is no rows object', () => {

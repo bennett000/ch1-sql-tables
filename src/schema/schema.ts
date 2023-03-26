@@ -98,7 +98,7 @@ export interface SchemaValidation {
 }
 
 export interface SchemaValidationContainer {
-  error: SchemaValidation;
+  error?: SchemaValidation;
   name: string;
 }
 

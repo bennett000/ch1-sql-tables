@@ -17,7 +17,10 @@ import {
 describe('checker functions', () => {
   describe('listTableNames function', () => {
     it('should return a promise', () => {
-      const tno = listTableNames('my-db', () => new Promise(resolve => resolve()));
+      const tno = listTableNames('my-db', () => new Promise<void>(resolve => resolve()) as any)
+        .catch(() => {
+          // we expect this to fail
+        });
       expect(tno instanceof Promise).toBe(true);
     });
 
@@ -54,7 +57,10 @@ describe('checker functions', () => {
 
   describe('fetchTablesAndCheckIfInCode function', () => {
     it('should return an observable', () => {
-      const o = fetchTablesAndCheckIfInCode('my-db', () => new Promise(resolve => resolve()), {});
+      const o = fetchTablesAndCheckIfInCode('my-db', () => new Promise<void>(resolve => resolve()) as any, {})
+        .catch(() => {
+          // we expect this to fail
+        });
       expect(o instanceof Promise).toBe(true);
     });
   });
