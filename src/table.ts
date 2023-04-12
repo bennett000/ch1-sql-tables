@@ -107,7 +107,7 @@ export function createDeleteQuery(
   name: string, idProps: string[]
 ): string {
   return `DELETE FROM ${name} WHERE ` + idProps.map((prop, i) => {
-    return `${prop} = $${i}`;
+    return `${prop} = $${i + 1}`;
   }).join(' AND ');
 }
 
